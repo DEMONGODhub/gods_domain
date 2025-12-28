@@ -14,7 +14,7 @@ Dependencies: Pillow (PIL)
 Install: pip install pillow
 Run: python image_viewer.py
 
-Author: (ROHIT) Enhanced by Claude
+Author: (ROHIT) your ____ heheheheheh
 """
 
 import os
