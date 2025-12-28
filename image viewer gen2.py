@@ -10,7 +10,7 @@ Features:
 - Slideshow play/pause
 - Keyboard shortcuts and mouse wheel zoom
 - Status bar showing filename / index / size
-
+->a advise that you didnt want dont try to downloaad if you alreadt has them hehehehhehe
 Dependencies: Pillow (PIL)
 Install: pip install pillow
 Run: python image_viewer.py
