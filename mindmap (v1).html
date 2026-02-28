@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MindMap – Offline Tool</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  background:#000;
+  color:#e0e0e0;
+  font-family:'Courier New',monospace;
+  height:100vh;
+  overflow:hidden;
+  display:flex;
+  flex-direction:column;
+}
+
+/* ── Setup Modal ── */
+#setup-overlay {
+  position:fixed; inset:0;
+  background:#000;
+  display:flex; align-items:center; justify-content:center;
+  z-index:9999;
+}
+#setup-box {
+  border:2px solid #888;
+  padding:32px 40px;
+  width:440px;
+  background:#0a0a0a;
+}
+#setup-box h1 {
+  font-size:18px; font-weight:normal;
+  letter-spacing:2px; text-transform:uppercase;
+  border-bottom:1px solid #444;
+  padding-bottom:12px; margin-bottom:24px; color:#fff;
+}
+#setup-box p { font-size:12px; color:#888; margin-bottom:20px; line-height:1.6; }
+.field-row { display:flex; align-items:center; margin-bottom:14px; gap:10px; }
+.field-row label {
+  font-size:12px; color:#aaa; width:90px;
+  flex-shrink:0; text-transform:uppercase; letter-spacing:1px;
+}
+.field-row input[type=number] {
+  flex:1; background:#111; border:1px solid #555;
+  color:#e0e0e0; padding:6px 10px;
+  font-family:'Courier New',monospace; font-size:13px; outline:none;
+}
+.field-row input[type=number]:focus { border-color:#aaa; }
+.field-row input[type=color] {
+  width:36px; height:28px; padding:1px; border:1px solid #555;
+  background:#111; cursor:pointer; outline:none;
+}
+.preset-row { display:flex; gap:8px; margin-bottom:20px; flex-wrap:wrap; }
+.preset-btn {
+  background:#111; border:1px solid #444; color:#bbb;
+  padding:5px 10px; font-size:11px;
+  font-family:'Courier New',monospace; cursor:pointer;
+  text-transform:uppercase; letter-spacing:1px; transition:border-color .15s;
+}
+.preset-btn:hover { border-color:#aaa; color:#fff; }
+#start-btn {
+  width:100%; background:#fff; color:#000; border:none; padding:10px;
+  font-family:'Courier New',monospace; font-size:13px;
+  letter-spacing:2px; text-transform:uppercase; cursor:pointer;
+}
+#start-btn:hover { background:#ddd; }
+.file-pick-label {
+  background:#111; border:1px solid #444; color:#bbb;
+  padding:5px 12px; font-size:11px;
+  font-family:'Courier New',monospace; cursor:pointer;
+  text-transform:uppercase; letter-spacing:1px;
+  transition:border-color .15s; white-space:nowrap;
+}
+.file-pick-label:hover { border-color:#aaa; color:#fff; }
+#img-preview-name { font-size:11px; color:#555; }
+
+/* ── Top Toolbar ── */
+#toolbar {
+  background:#0d0d0d;
+  border-bottom:1px solid #2a2a2a;
+  display:flex; align-items:center;
+  padding:0 12px; height:44px; gap:5px; flex-shrink:0;
+}
+#toolbar-title {
+  font-size:11px; letter-spacing:3px;
+  color:#444; text-transform:uppercase; margin-right:8px; white-space:nowrap;
+}
+.tool-btn {
+  background:transparent; border:1px solid #333; color:#aaa;
+  padding:5px 12px; font-family:'Courier New',monospace;
+  font-size:11px; letter-spacing:1px; text-transform:uppercase;
+  cursor:pointer; transition:all .15s; white-space:nowrap; flex-shrink:0;
+}
+.tool-btn:hover { border-color:#777; color:#e0e0e0; }
+.tool-btn.active { background:#fff; color:#000; border-color:#fff; }
+.tb-sep { width:1px; height:24px; background:#2a2a2a; margin:0 3px; flex-shrink:0; }
+.tb-icon-label {
+  font-size:10px; color:#555; text-transform:uppercase;
+  letter-spacing:1px; white-space:nowrap;
+}
+input[type=color].tb-color {
+  width:26px; height:26px; padding:1px; border:1px solid #333;
+  background:#111; cursor:pointer; outline:none;
+}
+#dl-btn {
+  background:transparent; border:1px solid #333; color:#777;
+  padding:5px 12px; font-family:'Courier New',monospace;
+  font-size:11px; letter-spacing:1px; text-transform:uppercase;
+  cursor:pointer; transition:all .15s; white-space:nowrap; flex-shrink:0;
+  margin-left:auto;
+}
+#dl-btn:hover { border-color:#aaa; color:#e0e0e0; }
+
+/* ── Sub-toolbar ── */
+#subtoolbar {
+  background:#080808;
+  border-bottom:1px solid #1a1a1a;
+  display:none; align-items:center;
+  padding:0 12px; height:38px; gap:5px; flex-shrink:0;
+  overflow-x:auto;
+}
+#subtoolbar.visible { display:flex; }
+.sub-btn {
+  background:transparent; border:1px solid #222; color:#666;
+  padding:3px 10px; font-family:'Courier New',monospace;
+  font-size:10px; letter-spacing:1px; text-transform:uppercase;
+  cursor:pointer; transition:all .15s; white-space:nowrap;
+}
+.sub-btn:hover { border-color:#555; color:#bbb; }
+.sub-btn.active { background:#444; color:#fff; border-color:#666; }
+.sub-sep { width:1px; height:18px; background:#1e1e1e; margin:0 4px; flex-shrink:0; }
+.sub-lbl { font-size:10px; color:#444; text-transform:uppercase; letter-spacing:1px; white-space:nowrap; }
+#brush-radius { -webkit-appearance:none; appearance:none; width:72px; height:2px; background:#333; outline:none; cursor:pointer; }
+#brush-radius::-webkit-slider-thumb { -webkit-appearance:none; width:10px; height:10px; border-radius:50%; background:#888; cursor:pointer; }
+#brush-radius-val { font-size:10px; color:#555; min-width:22px; }
+#brush-preview { border-radius:50%; border:1px solid #333; flex-shrink:0; transition:all .1s; }
+
+/* ── Canvas area ── */
+#canvas-container {
+  flex:1; overflow:hidden; position:relative;
+  display:flex; align-items:center; justify-content:center;
+  background:#111;
+}
+#main-canvas { display:block; box-shadow:0 0 50px rgba(0,0,0,0.9); }
+
+/* ── Text input overlay ── */
+#text-input {
+  position:fixed; border:1px dashed #555;
+  background:transparent; outline:none;
+  font-family:'Courier New',monospace; font-size:14px;
+  color:#000; z-index:200; min-width:80px;
+  padding:2px 4px; display:none;
+  resize:none; overflow:hidden; white-space:pre;
+}
+
+#status {
+  position:fixed; bottom:8px; left:50%; transform:translateX(-50%);
+  font-size:10px; color:#333; letter-spacing:2px;
+  text-transform:uppercase; pointer-events:none;
+}
+</style>
+</head>
+<body>
+
+<!-- ══════════ SETUP MODAL ══════════ -->
+<div id="setup-overlay">
+  <div id="setup-box">
+    <h1>Mind Map</h1>
+    <p>Configure your canvas. Choose size, background colour, or import a base image.</p>
+
+    <div class="preset-row">
+      <button class="preset-btn" onclick="setPreset(1920,1080)">1920×1080</button>
+      <button class="preset-btn" onclick="setPreset(2560,1440)">2560×1440</button>
+      <button class="preset-btn" onclick="setPreset(3508,2480)">A4</button>
+      <button class="preset-btn" onclick="setPreset(1280,720)">720p</button>
+    </div>
+
+    <div class="field-row">
+      <label>Width px</label>
+      <input type="number" id="inp-w" value="1920" min="400" max="8000">
+    </div>
+    <div class="field-row">
+      <label>Height px</label>
+      <input type="number" id="inp-h" value="1080" min="300" max="8000">
+    </div>
+    <div class="field-row">
+      <label>BG Colour</label>
+      <input type="color" id="inp-bg" value="#ffffff">
+      <span style="font-size:11px;color:#444">Sheet background</span>
+    </div>
+    <div class="field-row">
+      <label>Import Img</label>
+      <label class="file-pick-label" for="inp-img">Choose File</label>
+      <input type="file" id="inp-img" accept="image/*" style="display:none" onchange="previewSetupImg(this)">
+      <span id="img-preview-name">none selected</span>
+    </div>
+
+    <br>
+    <button id="start-btn" onclick="startApp()">Create Sheet &#x2192;</button>
+  </div>
+</div>
+
+<!-- ══════════ MAIN TOOLBAR ══════════ -->
+<div id="toolbar" style="display:none">
+  <span id="toolbar-title">Mind Map</span>
+
+  <button class="tool-btn active" id="btn-text"  onclick="setTool('text')">&#9998; Text</button>
+  <button class="tool-btn"        id="btn-line"  onclick="setTool('line')">&#9585; Line</button>
+  <button class="tool-btn"        id="btn-shape" onclick="setTool('shape')">&#9723; Shapes</button>
+  <button class="tool-btn"        id="btn-brush" onclick="setTool('brush')">&#11044; Brush</button>
+
+  <div class="tb-sep"></div>
+
+  <span class="tb-icon-label">BG</span>
+  <input type="color" class="tb-color" id="tb-bg-color" value="#ffffff" title="Change background colour" oninput="changeBG(this.value)">
+
+  <div class="tb-sep"></div>
+
+  <label class="file-pick-label" for="tb-img-file" style="font-size:10px;padding:4px 10px;border:1px solid #2a2a2a;">&#8681; Image</label>
+  <input type="file" id="tb-img-file" accept="image/*" style="display:none" onchange="importImageLive(this)">
+
+  <button id="dl-btn" onclick="downloadPNG()">&#8595; PNG</button>
+</div>
+
+<!-- ══════════ SUB TOOLBAR ══════════ -->
+<div id="subtoolbar">
+
+  <!-- Shapes group -->
+  <div id="sub-shapes-grp" style="display:flex;align-items:center;gap:5px;">
+    <button class="sub-btn active" id="sbtn-rect"    onclick="setShape('rect')">&#9645; Rect</button>
+    <button class="sub-btn"        id="sbtn-circle"  onclick="setShape('circle')">&#9675; Circle</button>
+    <button class="sub-btn"        id="sbtn-diamond" onclick="setShape('diamond')">&#9671; Diamond</button>
+    <button class="sub-btn"        id="sbtn-arrow"   onclick="setShape('arrow')">&#8594; Arrow</button>
+    <button class="sub-btn"        id="sbtn-tri"     onclick="setShape('tri')">&#9651; Triangle</button>
+    <div class="sub-sep"></div>
+    <span class="sub-lbl">Fill</span>
+    <input type="color" class="tb-color" id="shape-fill"   value="#ffffff" style="width:22px;height:22px;">
+    <span class="sub-lbl">Stroke</span>
+    <input type="color" class="tb-color" id="shape-stroke" value="#000000" style="width:22px;height:22px;">
+  </div>
+
+  <!-- Brush group -->
+  <div id="sub-brush-grp" style="display:none;align-items:center;gap:6px;">
+    <button class="sub-btn active" id="sbtn-paint" onclick="setBrushMode('paint')">Paint</button>
+    <button class="sub-btn"        id="sbtn-erase" onclick="setBrushMode('erase')">Erase</button>
+    <div class="sub-sep"></div>
+    <span class="sub-lbl">Colour</span>
+    <input type="color" class="tb-color" id="brush-color" value="#000000" oninput="updateBrushPreview()" style="width:22px;height:22px;">
+    <div class="sub-sep"></div>
+    <span class="sub-lbl">Size</span>
+    <input type="range" id="brush-radius" min="2" max="80" value="12" oninput="updateBrushPreview()">
+    <span id="brush-radius-val">12</span>
+    <div id="brush-preview" style="width:14px;height:14px;background:#000;"></div>
+  </div>
+
+</div>
+
+<!-- ══════════ CANVAS ══════════ -->
+<div id="canvas-container" style="display:none">
+  <canvas id="main-canvas"></canvas>
+</div>
+
+<textarea id="text-input" rows="1"></textarea>
+<div id="status"></div>
+
+<script>
+const canvas    = document.getElementById('main-canvas');
+const ctx       = canvas.getContext('2d');
+const textInput = document.getElementById('text-input');
+const statusEl  = document.getElementById('status');
+
+let tool        = 'text';
+let activeShape = 'rect';
+let brushMode   = 'paint';
+let bgColor     = '#ffffff';
+let importedImg = null; // {img,x,y,w,h}
+
+let isDrawingLine  = false, lineStart  = null;
+let isDrawingShape = false, shapeStart = null;
+let isBrushing     = false;
+
+// Stroke list – brush strokes go directly to pixel buffer, not stored here
+let strokes = [];
+
+/* ──────────── SETUP ──────────── */
+let setupImgFile = null;
+
+function setPreset(w,h){
+  document.getElementById('inp-w').value=w;
+  document.getElementById('inp-h').value=h;
+}
+
+function previewSetupImg(input){
+  setupImgFile=input.files[0]||null;
+  document.getElementById('img-preview-name').textContent=
+    setupImgFile?setupImgFile.name:'none selected';
+}
+
+async function startApp(){
+  const w=parseInt(document.getElementById('inp-w').value)||1920;
+  const h=parseInt(document.getElementById('inp-h').value)||1080;
+  bgColor=document.getElementById('inp-bg').value;
+  document.getElementById('tb-bg-color').value=bgColor;
+  canvas.width=w; canvas.height=h;
+
+  if(setupImgFile){ await loadImg(setupImgFile, true); }
+  else { redraw(); }
+
+  document.getElementById('setup-overlay').style.display='none';
+  document.getElementById('toolbar').style.display='flex';
+  document.getElementById('canvas-container').style.display='flex';
+  fitCanvas();
+  updateStatus();
+}
+
+function loadImg(file, stretch){
+  return new Promise(res=>{
+    const reader=new FileReader();
+    reader.onload=e=>{
+      const img=new Image();
+      img.onload=()=>{
+        if(stretch){
+          importedImg={img,x:0,y:0,w:canvas.width,h:canvas.height};
+        } else {
+          // Fit proportionally
+          const scale=Math.min(canvas.width/img.width,canvas.height/img.height);
+          const w2=img.width*scale, h2=img.height*scale;
+          importedImg={img, x:(canvas.width-w2)/2, y:(canvas.height-h2)/2, w:w2, h:h2};
+        }
+        redraw(); res();
+      };
+      img.src=e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+/* ──────────── LAYOUT ──────────── */
+function fitCanvas(){
+  const cont=document.getElementById('canvas-container');
+  const cw=cont.clientWidth-40, ch=cont.clientHeight-40;
+  const scale=Math.min(cw/canvas.width, ch/canvas.height, 1);
+  canvas.style.width=(canvas.width*scale)+'px';
+  canvas.style.height=(canvas.height*scale)+'px';
+}
+window.addEventListener('resize',fitCanvas);
+
+/* ──────────── TOOLS ──────────── */
+function setTool(t){
+  finishTextInput();
+  isDrawingLine=false; lineStart=null;
+  isDrawingShape=false; shapeStart=null;
+
+  tool=t;
+  ['text','line','shape','brush'].forEach(id=>{
+    const b=document.getElementById('btn-'+id);
+    if(b) b.classList.toggle('active',id===t);
+  });
+
+  const sub=document.getElementById('subtoolbar');
+  if(t==='shape'||t==='brush'){
+    sub.classList.add('visible');
+    document.getElementById('sub-shapes-grp').style.display=t==='shape'?'flex':'none';
+    document.getElementById('sub-brush-grp').style.display =t==='brush'?'flex':'none';
+  } else {
+    sub.classList.remove('visible');
+  }
+
+  canvas.style.cursor=t==='brush'?'none':'crosshair';
+  updateStatus();
+}
+
+function setShape(s){
+  activeShape=s;
+  ['rect','circle','diamond','arrow','tri'].forEach(id=>{
+    document.getElementById('sbtn-'+id).classList.toggle('active',id===s);
+  });
+}
+
+function setBrushMode(m){
+  brushMode=m;
+  document.getElementById('sbtn-paint').classList.toggle('active',m==='paint');
+  document.getElementById('sbtn-erase').classList.toggle('active',m==='erase');
+  updateBrushPreview();
+}
+
+function updateBrushPreview(){
+  const r=parseInt(document.getElementById('brush-radius').value);
+  const c=document.getElementById('brush-color').value;
+  document.getElementById('brush-radius-val').textContent=r;
+  const sz=Math.min(r*2,36);
+  const prev=document.getElementById('brush-preview');
+  prev.style.width=sz+'px'; prev.style.height=sz+'px';
+  prev.style.background=brushMode==='erase'?bgColor:c;
+  prev.style.border='1px solid #444';
+}
+
+/* ──────────── BG & IMAGE ──────────── */
+function changeBG(c){ bgColor=c; redraw(); }
+
+function importImageLive(input){
+  const file=input.files[0]; if(!file)return;
+  loadImg(file,false);
+  input.value='';
+}
+
+/* ──────────── CANVAS POS ──────────── */
+function getCanvasPos(e){
+  const rect=canvas.getBoundingClientRect();
+  const sx=canvas.width/rect.width, sy=canvas.height/rect.height;
+  const cx=e.touches?e.touches[0].clientX:e.clientX;
+  const cy=e.touches?e.touches[0].clientY:e.clientY;
+  return {x:(cx-rect.left)*sx, y:(cy-rect.top)*sy};
+}
+
+/* ──────────── EVENTS ──────────── */
+canvas.addEventListener('mousedown',e=>{
+  const p=getCanvasPos(e);
+  if(tool==='line'){
+    if(!isDrawingLine){isDrawingLine=true;lineStart=p;updateStatus();}
+    else{strokes.push({type:'line',x1:lineStart.x,y1:lineStart.y,x2:p.x,y2:p.y});isDrawingLine=false;lineStart=null;redraw();updateStatus();}
+  }
+  if(tool==='shape'){isDrawingShape=true;shapeStart=p;}
+  if(tool==='brush'){isBrushing=true;applyBrush(p.x,p.y);}
+});
+
+canvas.addEventListener('mousemove',e=>{
+  const p=getCanvasPos(e);
+  if(tool==='line'&&isDrawingLine){
+    redraw();
+    ctx.save();ctx.beginPath();ctx.moveTo(lineStart.x,lineStart.y);ctx.lineTo(p.x,p.y);
+    ctx.strokeStyle='#777';ctx.setLineDash([4,4]);ctx.lineWidth=1;ctx.stroke();ctx.restore();
+  }
+  if(tool==='shape'&&isDrawingShape){
+    redraw();
+    drawShapeCtx(ctx,activeShape,shapeStart.x,shapeStart.y,p.x,p.y,
+      document.getElementById('shape-fill').value,
+      document.getElementById('shape-stroke').value,true);
+  }
+  if(tool==='brush'&&isBrushing){applyBrush(p.x,p.y);}
+});
+
+canvas.addEventListener('mouseup',e=>{
+  const p=getCanvasPos(e);
+  if(tool==='shape'&&isDrawingShape){
+    isDrawingShape=false;
+    strokes.push({type:'shape',shape:activeShape,
+      x1:shapeStart.x,y1:shapeStart.y,x2:p.x,y2:p.y,
+      fill:document.getElementById('shape-fill').value,
+      stroke:document.getElementById('shape-stroke').value});
+    redraw();
+  }
+  isBrushing=false;
+});
+canvas.addEventListener('mouseleave',()=>{isBrushing=false;});
+
+/* ── Text ── */
+canvas.addEventListener('click',e=>{
+  if(tool!=='text')return;
+  finishTextInput();
+  const p=getCanvasPos(e);
+  textInput.style.display='block';
+  textInput.style.left=e.clientX+'px';
+  textInput.style.top=e.clientY+'px';
+  textInput.style.fontSize='14px';
+  textInput.value='';
+  textInput.dataset.cx=p.x;
+  textInput.dataset.cy=p.y;
+  textInput.focus();
+});
+textInput.addEventListener('keydown',e=>{
+  if(e.key==='Escape')finishTextInput();
+  if(e.key==='Enter'&&!e.shiftKey){finishTextInput();e.preventDefault();}
+  setTimeout(()=>{textInput.style.width=(textInput.scrollWidth+10)+'px';},0);
+});
+document.addEventListener('mousedown',e=>{
+  if(tool==='text'&&e.target!==textInput&&e.target!==canvas)finishTextInput();
+});
+
+function finishTextInput(){
+  if(textInput.style.display==='none')return;
+  const txt=textInput.value.trim();
+  if(txt){
+    const cx=parseFloat(textInput.dataset.cx);
+    const cy=parseFloat(textInput.dataset.cy);
+    strokes.push({type:'text',x:cx,y:cy,text:txt,font:'14px Courier New',color:'#000'});
+    redraw();
+  }
+  textInput.style.display='none';textInput.value='';
+}
+
+/* ──────────── DRAW HELPERS ──────────── */
+function drawShapeCtx(c,shape,x1,y1,x2,y2,fill,stroke,preview){
+  c.save();
+  c.fillStyle=fill; c.strokeStyle=stroke; c.lineWidth=preview?1:1.5;
+  if(preview)c.setLineDash([5,3]); else c.setLineDash([]);
+  const w=x2-x1, h=y2-y1, cx=(x1+x2)/2, cy=(y1+y2)/2;
+  c.beginPath();
+  if(shape==='rect'){
+    c.rect(x1,y1,w,h);
+  }else if(shape==='circle'){
+    c.ellipse(cx,cy,Math.abs(w/2),Math.abs(h/2),0,0,Math.PI*2);
+  }else if(shape==='diamond'){
+    c.moveTo(cx,y1);c.lineTo(x2,cy);c.lineTo(cx,y2);c.lineTo(x1,cy);c.closePath();
+  }else if(shape==='arrow'){
+    const hw=Math.abs(h)*0.3, hLen=Math.min(Math.abs(w)*0.3,50);
+    const d=w>=0?1:-1;
+    c.moveTo(x1,cy-hw/2);
+    c.lineTo(x2-d*hLen,cy-hw/2);
+    c.lineTo(x2-d*hLen,cy-Math.abs(h)/2);
+    c.lineTo(x2,cy);
+    c.lineTo(x2-d*hLen,cy+Math.abs(h)/2);
+    c.lineTo(x2-d*hLen,cy+hw/2);
+    c.lineTo(x1,cy+hw/2);
+    c.closePath();
+  }else if(shape==='tri'){
+    c.moveTo(cx,y1);c.lineTo(x2,y2);c.lineTo(x1,y2);c.closePath();
+  }
+  c.fill(); c.stroke();
+  c.restore();
+}
+
+function applyBrush(x,y){
+  const r=parseInt(document.getElementById('brush-radius').value);
+  const col=document.getElementById('brush-color').value;
+  ctx.save();
+  ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);
+  ctx.fillStyle=brushMode==='erase'?bgColor:col;
+  ctx.fill();ctx.restore();
+}
+
+/* ──────────── REDRAW ──────────── */
+function redraw(){
+  ctx.fillStyle=bgColor;
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+  if(importedImg){
+    const o=importedImg;
+    ctx.drawImage(o.img,o.x,o.y,o.w,o.h);
+  }
+  strokes.forEach(s=>{
+    if(s.type==='line'){
+      ctx.save();ctx.beginPath();
+      ctx.moveTo(s.x1,s.y1);ctx.lineTo(s.x2,s.y2);
+      ctx.strokeStyle='#000';ctx.lineWidth=1.5;ctx.setLineDash([]);ctx.stroke();ctx.restore();
+    }else if(s.type==='text'){
+      ctx.font=s.font;ctx.fillStyle=s.color;ctx.fillText(s.text,s.x,s.y);
+    }else if(s.type==='shape'){
+      drawShapeCtx(ctx,s.shape,s.x1,s.y1,s.x2,s.y2,s.fill,s.stroke,false);
+    }
+  });
+}
+
+/* ──────────── DOWNLOAD ──────────── */
+function downloadPNG(){
+  finishTextInput();
+  redraw();
+  const a=document.createElement('a');
+  a.download='mindmap.png';
+  a.href=canvas.toDataURL('image/png');
+  a.click();
+}
+
+/* ──────────── STATUS ──────────── */
+function updateStatus(){
+  const m={
+    text:'Text — click canvas to add a label',
+    line:isDrawingLine?'Line — click end point':'Line — click start point',
+    shape:'Shapes — click and drag',
+    brush:'Brush — click and drag to paint / erase'
+  };
+  statusEl.textContent=m[tool]||'';
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MindMap – Offline Tool</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #000;
+    color: #e0e0e0;
+    font-family: 'Courier New', monospace;
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── Setup Modal ── */
+  #setup-overlay {
+    position: fixed; inset: 0;
+    background: #000;
+    display: flex; align-items: center; justify-content: center;
+    z-index: 9999;
+  }
+
+  #setup-box {
+    border: 2px solid #888;
+    padding: 32px 40px;
+    width: 420px;
+    background: #0a0a0a;
+  }
+
+  #setup-box h1 {
+    font-size: 18px;
+    font-weight: normal;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    border-bottom: 1px solid #444;
+    padding-bottom: 12px;
+    margin-bottom: 24px;
+    color: #fff;
+  }
+
+  #setup-box p {
+    font-size: 12px;
+    color: #888;
+    margin-bottom: 20px;
+    line-height: 1.6;
+  }
+
+  .field-row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 14px;
+    gap: 10px;
+  }
+
+  .field-row label {
+    font-size: 12px;
+    color: #aaa;
+    width: 80px;
+    flex-shrink: 0;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .field-row input {
+    flex: 1;
+    background: #111;
+    border: 1px solid #555;
+    color: #e0e0e0;
+    padding: 6px 10px;
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    outline: none;
+  }
+
+  .field-row input:focus { border-color: #aaa; }
+
+  .preset-row {
+    display: flex; gap: 8px; margin-bottom: 20px;
+  }
+
+  .preset-btn {
+    background: #111;
+    border: 1px solid #444;
+    color: #bbb;
+    padding: 5px 10px;
+    font-size: 11px;
+    font-family: 'Courier New', monospace;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    transition: border-color .15s;
+  }
+  .preset-btn:hover { border-color: #aaa; color: #fff; }
+
+  #start-btn {
+    width: 100%;
+    background: #fff;
+    color: #000;
+    border: none;
+    padding: 10px;
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background .15s;
+  }
+  #start-btn:hover { background: #ddd; }
+
+  /* ── Top Bar ── */
+  #toolbar {
+    background: #0d0d0d;
+    border-bottom: 1px solid #2a2a2a;
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    height: 44px;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+
+  .tool-btn {
+    background: transparent;
+    border: 1px solid #333;
+    color: #aaa;
+    padding: 5px 14px;
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all .15s;
+  }
+  .tool-btn:hover { border-color: #777; color: #e0e0e0; }
+  .tool-btn.active { background: #fff; color: #000; border-color: #fff; }
+
+  #toolbar-title {
+    font-size: 11px;
+    letter-spacing: 3px;
+    color: #444;
+    text-transform: uppercase;
+    margin-right: auto;
+  }
+
+  #dl-btn {
+    background: transparent;
+    border: 1px solid #333;
+    color: #777;
+    padding: 5px 14px;
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all .15s;
+  }
+  #dl-btn:hover { border-color: #aaa; color: #e0e0e0; }
+
+  /* ── Canvas Area ── */
+  #canvas-container {
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #1a1a1a;
+  }
+
+  #main-canvas {
+    background: #fff;
+    cursor: crosshair;
+    display: block;
+    box-shadow: 0 0 40px rgba(0,0,0,0.8);
+  }
+
+  /* ── Inline text input ── */
+  #text-input {
+    position: fixed;
+    border: 1px dashed #333;
+    background: transparent;
+    outline: none;
+    font-family: 'Courier New', monospace;
+    font-size: 14px;
+    color: #000;
+    z-index: 100;
+    min-width: 80px;
+    padding: 2px 4px;
+    display: none;
+    resize: none;
+    overflow: hidden;
+    white-space: pre;
+  }
+
+  #status {
+    position: fixed;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 10px;
+    color: #444;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    pointer-events: none;
+  }
+</style>
+</head>
+<body>
+
+<!-- Setup Modal -->
+<div id="setup-overlay">
+  <div id="setup-box">
+    <h1>Mind Map</h1>
+    <p>Set canvas size before you begin. Choose a preset or enter custom dimensions.</p>
+    <div class="preset-row">
+      <button class="preset-btn" onclick="setPreset(1920,1080)">1920×1080</button>
+      <button class="preset-btn" onclick="setPreset(2560,1440)">2560×1440</button>
+      <button class="preset-btn" onclick="setPreset(3508,2480)">A4</button>
+      <button class="preset-btn" onclick="setPreset(1280,720)">720p</button>
+    </div>
+    <div class="field-row">
+      <label>Width</label>
+      <input type="number" id="inp-w" value="1920" min="400" max="8000">
+    </div>
+    <div class="field-row">
+      <label>Height</label>
+      <input type="number" id="inp-h" value="1080" min="300" max="8000">
+    </div>
+    <br>
+    <button id="start-btn" onclick="startApp()">Create Sheet →</button>
+  </div>
+</div>
+
+<!-- App -->
+<div id="toolbar" style="display:none">
+  <span id="toolbar-title">Mind Map</span>
+  <button class="tool-btn active" id="btn-text" onclick="setTool('text')">✎ Text</button>
+  <button class="tool-btn" id="btn-line" onclick="setTool('line')">╱ Line</button>
+  <button id="dl-btn" onclick="downloadPNG()">↓ Download PNG</button>
+</div>
+
+<div id="canvas-container" style="display:none">
+  <canvas id="main-canvas"></canvas>
+</div>
+
+<textarea id="text-input" rows="1"></textarea>
+<div id="status"></div>
+
+<script>
+  const canvas = document.getElementById('main-canvas');
+  const ctx = canvas.getContext('2d');
+  const textInput = document.getElementById('text-input');
+  const status = document.getElementById('status');
+
+  let tool = 'text';
+  let isDrawingLine = false;
+  let lineStart = null;
+  let canvasRect = null;
+
+  // Stored strokes for redraw
+  let strokes = []; // {type:'line', x1,y1,x2,y2} or {type:'text', x,y,text,font,size}
+
+  function setPreset(w, h) {
+    document.getElementById('inp-w').value = w;
+    document.getElementById('inp-h').value = h;
+  }
+
+  function startApp() {
+    const w = parseInt(document.getElementById('inp-w').value) || 1920;
+    const h = parseInt(document.getElementById('inp-h').value) || 1080;
+    canvas.width = w;
+    canvas.height = h;
+
+    // White background
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, w, h);
+
+    document.getElementById('setup-overlay').style.display = 'none';
+    document.getElementById('toolbar').style.display = 'flex';
+    document.getElementById('canvas-container').style.display = 'flex';
+
+    fitCanvas();
+    updateStatus();
+  }
+
+  function fitCanvas() {
+    const cont = document.getElementById('canvas-container');
+    const cw = cont.clientWidth - 40;
+    const ch = cont.clientHeight - 40;
+    const scale = Math.min(cw / canvas.width, ch / canvas.height, 1);
+    canvas.style.width = (canvas.width * scale) + 'px';
+    canvas.style.height = (canvas.height * scale) + 'px';
+  }
+
+  window.addEventListener('resize', fitCanvas);
+
+  function setTool(t) {
+    tool = t;
+    document.getElementById('btn-text').classList.toggle('active', t === 'text');
+    document.getElementById('btn-line').classList.toggle('active', t === 'line');
+    finishTextInput();
+    isDrawingLine = false;
+    lineStart = null;
+    updateStatus();
+  }
+
+  function getCanvasPos(e) {
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    return {
+      x: (clientX - rect.left) * scaleX,
+      y: (clientY - rect.top) * scaleY,
+      screenX: clientX,
+      screenY: clientY
+    };
+  }
+
+  // ── Line tool ──
+  canvas.addEventListener('mousedown', e => {
+    if (tool !== 'line') return;
+    const pos = getCanvasPos(e);
+    if (!isDrawingLine) {
+      isDrawingLine = true;
+      lineStart = pos;
+      status.textContent = 'Click destination to draw line';
+    } else {
+      // Draw line
+      ctx.beginPath();
+      ctx.moveTo(lineStart.x, lineStart.y);
+      ctx.lineTo(pos.x, pos.y);
+      ctx.strokeStyle = '#000';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      strokes.push({type:'line', x1:lineStart.x, y1:lineStart.y, x2:pos.x, y2:pos.y});
+      isDrawingLine = false;
+      lineStart = null;
+      updateStatus();
+    }
+  });
+
+  // Preview line while moving
+  canvas.addEventListener('mousemove', e => {
+    if (tool !== 'line' || !isDrawingLine) return;
+    const pos = getCanvasPos(e);
+    redraw();
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(lineStart.x, lineStart.y);
+    ctx.lineTo(pos.x, pos.y);
+    ctx.strokeStyle = '#555';
+    ctx.setLineDash([4,4]);
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.restore();
+  });
+
+  // ── Text tool ──
+  canvas.addEventListener('click', e => {
+    if (tool !== 'text') return;
+    finishTextInput();
+
+    const pos = getCanvasPos(e);
+    const rect = canvas.getBoundingClientRect();
+    const screenX = e.clientX;
+    const screenY = e.clientY;
+
+    textInput.style.display = 'block';
+    textInput.style.left = screenX + 'px';
+    textInput.style.top = screenY + 'px';
+    textInput.style.fontSize = '14px';
+    textInput.value = '';
+    textInput.dataset.cx = pos.x;
+    textInput.dataset.cy = pos.y;
+    textInput.focus();
+  });
+
+  textInput.addEventListener('keydown', e => {
+    if (e.key === 'Escape') { finishTextInput(); }
+    if (e.key === 'Enter' && !e.shiftKey) { finishTextInput(); e.preventDefault(); }
+    // Auto-resize
+    setTimeout(() => {
+      textInput.style.width = (textInput.scrollWidth + 10) + 'px';
+    }, 0);
+  });
+
+  function finishTextInput() {
+    if (textInput.style.display === 'none') return;
+    const txt = textInput.value.trim();
+    if (txt) {
+      const cx = parseFloat(textInput.dataset.cx);
+      const cy = parseFloat(textInput.dataset.cy);
+      ctx.font = '14px Courier New';
+      ctx.fillStyle = '#000';
+      ctx.fillText(txt, cx, cy);
+      strokes.push({type:'text', x:cx, y:cy, text:txt, font:'14px Courier New', color:'#000'});
+    }
+    textInput.style.display = 'none';
+    textInput.value = '';
+  }
+
+  document.addEventListener('mousedown', e => {
+    if (tool === 'text' && e.target !== textInput && e.target !== canvas) {
+      finishTextInput();
+    }
+  });
+
+  function redraw() {
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    strokes.forEach(s => {
+      if (s.type === 'line') {
+        ctx.beginPath();
+        ctx.moveTo(s.x1, s.y1);
+        ctx.lineTo(s.x2, s.y2);
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([]);
+        ctx.stroke();
+      } else if (s.type === 'text') {
+        ctx.font = s.font;
+        ctx.fillStyle = s.color;
+        ctx.fillText(s.text, s.x, s.y);
+      }
+    });
+  }
+
+  function downloadPNG() {
+    finishTextInput();
+    redraw();
+    const link = document.createElement('a');
+    link.download = 'mindmap.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  }
+
+  function updateStatus() {
+    if (tool === 'text') status.textContent = 'Text mode — click on canvas to add text';
+    else if (tool === 'line' && !isDrawingLine) status.textContent = 'Line mode — click start point';
+    else if (tool === 'line' && isDrawingLine) status.textContent = 'Line mode — click end point';
+  }
+</script>
+</body>
+</html>
