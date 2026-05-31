@@ -1,0 +1,1140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Premium Chess vs AI</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        :root {
+            --bg-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --bg-secondary: #ffffff;
+            --text-primary: #2c3e50;
+            --text-secondary: #7f8c8d;
+            --square-light: #f0d9b5;
+            --square-dark: #b58863;
+            --accent: #3498db;
+            --success: #27ae60;
+            --danger: #e74c3c;
+            --warning: #000000;
+            --shadow: rgba(0,0,0,0.3);
+        }
+        
+        [data-theme="dark"] {
+            --bg-primary: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            --bg-secondary: #1a1a2e;
+            --text-primary: #ecf0f1;
+            --text-secondary: #95a5a6;
+            --square-light: #4a5568;
+            --square-dark: #2d3748;
+            --shadow: rgba(0,0,0,0.6);
+        }
+        
+        body {
+            font-family: 'Segoe UI', 'Arial', sans-serif;
+            background: var(--bg-primary);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            transition: all 0.3s ease;
+        }
+        
+        .container {
+            background: var(--bg-secondary);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 25px 70px var(--shadow);
+            max-width: 1200px;
+            transition: all 0.3s ease;
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        h1 { 
+            color: var(--text-primary); 
+            font-size: 2em;
+            font-weight: 700;
+        }
+        
+        .theme-toggle {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        
+        .theme-toggle:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
+        }
+        
+        .game-layout {
+            display: grid;
+            grid-template-columns: 1fr 600px 1fr;
+            gap: 30px;
+            align-items: start;
+        }
+        
+        .side-panel {
+            background: rgba(149, 165, 166, 0.1);
+            padding: 20px;
+            border-radius: 15px;
+            color: var(--text-primary);
+        }
+        
+        .panel-title {
+            font-size: 1.2em;
+            font-weight: 700;
+            margin-bottom: 15px;
+            color: var(--text-primary);
+        }
+        
+        .captured-pieces {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            min-height: 60px;
+            padding: 10px;
+            background: rgba(0,0,0,0.05);
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+        
+        .captured-piece {
+            font-size: 28px;
+            opacity: 0.7;
+        }
+        
+        .move-history {
+            max-height: 300px;
+            overflow-y: auto;
+            background: rgba(0,0,0,0.05);
+            border-radius: 8px;
+            padding: 10px;
+        }
+        
+        .move-entry {
+            display: grid;
+            grid-template-columns: 40px 1fr 1fr;
+            gap: 10px;
+            padding: 8px;
+            border-bottom: 1px solid rgba(0,0,0,0.1);
+            font-size: 14px;
+            color: var(--text-primary);
+        }
+        
+        .move-number {
+            font-weight: 700;
+            color: var(--text-secondary);
+        }
+        
+        .timer-display {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 15px;
+            padding: 15px;
+            background: rgba(0,0,0,0.05);
+            border-radius: 8px;
+        }
+        
+        .timer {
+            text-align: center;
+        }
+        
+        .timer-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 5px;
+        }
+        
+        .timer-value {
+            font-size: 24px;
+            font-weight: 700;
+            font-family: 'Courier New', monospace;
+            color: var(--text-primary);
+        }
+        
+        .timer.active .timer-value {
+            color: var(--success);
+        }
+        
+        .board-container {
+            position: relative;
+        }
+        
+        .info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            padding: 20px;
+            background: linear-gradient(135deg, rgba(52, 152, 219, 0.1), rgba(155, 89, 182, 0.1));
+            border-radius: 12px;
+            border: 2px solid rgba(52, 152, 219, 0.2);
+        }
+        
+        .player { 
+            font-weight: 600; 
+            font-size: 1.1em;
+            color: var(--text-primary);
+        }
+        
+        .turn { 
+            padding: 10px 20px; 
+            background: var(--success); 
+            color: white; 
+            border-radius: 25px; 
+            font-weight: 600;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        #board {
+            display: grid;
+            grid-template-columns: repeat(8, 70px);
+            grid-template-rows: repeat(8, 70px);
+            border: 4px solid #34495e;
+            margin: 0 auto;
+            box-shadow: 0 15px 40px var(--shadow);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .square {
+            width: 70px;
+            height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 50px;
+            cursor: pointer;
+            user-select: none;
+            position: relative;
+            transition: all 0.2s ease;
+        }
+        
+        .square:hover:not(.no-hover) {
+            filter: brightness(1.1);
+        }
+        
+        .light { background-color: var(--square-light); }
+        .dark { background-color: var(--square-dark); }
+        
+        .selected { 
+            box-shadow: inset 0 0 0 4px var(--accent) !important;
+            filter: brightness(1.2);
+        }
+        
+        .highlight::after {
+            content: '';
+            position: absolute;
+            width: 22px;
+            height: 22px;
+            background: rgba(52, 152, 219, 0.6);
+            border-radius: 50%;
+            animation: highlight-pulse 1s infinite;
+        }
+        
+        @keyframes highlight-pulse {
+            0%, 100% { transform: scale(1); opacity: 0.6; }
+            50% { transform: scale(1.2); opacity: 0.8; }
+        }
+        
+        .capture::after {
+            content: '';
+            position: absolute;
+            width: 64px;
+            height: 64px;
+            border: 4px solid rgba(231, 76, 60, 0.7);
+            border-radius: 50%;
+            animation: capture-pulse 1s infinite;
+        }
+        
+        @keyframes capture-pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        
+        .last-move { 
+            background-color: rgba(243, 156, 18, 0.4) !important;
+        }
+        
+        .check { 
+            background: radial-gradient(circle, #e74c3c 0%, #c0392b 100%) !important;
+            animation: check-flash 0.5s ease-in-out 3;
+        }
+        
+        @keyframes check-flash {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        .hint-target {
+            box-shadow: inset 0 0 0 4px var(--warning) !important;
+            animation: hint-glow 1s infinite;
+        }
+        
+        @keyframes hint-glow {
+            0%, 100% { filter: brightness(1); }
+            50% { filter: brightness(1.3); }
+        }
+        
+        .piece {
+            transition: transform 0.3s ease;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+        }
+        
+        .square:active .piece {
+            transform: scale(0.95);
+        }
+        
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        button {
+            padding: 14px 24px;
+            font-size: 15px;
+            font-weight: 600;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            color: white;
+            background: linear-gradient(135deg, var(--accent), #2980b9);
+            transition: all 0.3s;
+            box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+        }
+        
+        button:hover:not(:disabled) { 
+            transform: translateY(-3px); 
+            box-shadow: 0 8px 20px rgba(52, 152, 219, 0.4);
+        }
+        
+        button:active:not(:disabled) {
+            transform: translateY(-1px);
+        }
+        
+        button:disabled { 
+            opacity: 0.4; 
+            cursor: not-allowed;
+            transform: none !important;
+        }
+        
+        button.danger {
+            background: linear-gradient(135deg, var(--danger), #c0392b);
+        }
+        
+        button.warning {
+            background: linear-gradient(135deg, var(--warning), #e67e22);
+        }
+        
+        button.success {
+            background: linear-gradient(135deg, var(--success), #229954);
+        }
+        
+        .status {
+            text-align: center;
+            margin-top: 15px;
+            font-size: 1.4em;
+            font-weight: 700;
+            padding: 15px;
+            border-radius: 10px;
+            transition: all 0.3s;
+        }
+        
+        .status.checkmate { 
+            background: linear-gradient(135deg, #f8d7da, #f5c6cb);
+            color: #721c24;
+            animation: victory-bounce 0.5s ease-in-out;
+        }
+        
+        @keyframes victory-bounce {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        
+        .status.check-msg { 
+            background: linear-gradient(135deg, #fff3cd, #ffe69c);
+            color: #856404;
+        }
+        
+        .status.draw {
+            background: linear-gradient(135deg, #d1ecf1, #bee5eb);
+            color: #0c5460;
+        }
+        
+        .difficulty {
+            margin-bottom: 15px;
+            padding: 15px;
+            background: rgba(0,0,0,0.05);
+            border-radius: 10px;
+        }
+        
+        .difficulty label {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-right: 10px;
+        }
+        
+        select {
+            padding: 10px 18px;
+            border: 2px solid var(--accent);
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        select:hover:not(:disabled) {
+            border-color: #2980b9;
+            box-shadow: 0 0 10px rgba(52, 152, 219, 0.3);
+        }
+        
+        select:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .thinking {
+            text-align: center;
+            color: var(--warning);
+            font-weight: 600;
+            margin-top: 15px;
+            padding: 12px;
+            background: rgba(243, 156, 18, 0.1);
+            border-radius: 8px;
+            display: none;
+        }
+        
+        .thinking.active { 
+            display: block; 
+            animation: thinking-pulse 1.5s infinite;
+        }
+        
+        @keyframes thinking-pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .stat-item {
+            background: rgba(0,0,0,0.05);
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 5px;
+        }
+        
+        .stat-value {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        
+        .invalid-move {
+            animation: shake 0.5s;
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+        
+        @media (max-width: 1200px) {
+            .game-layout {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .side-panel {
+                order: 2;
+            }
+            
+            .board-container {
+                order: 1;
+            }
+        }
+        
+        .scroll-smooth {
+            scroll-behavior: smooth;
+        }
+        
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.1);
+            border-radius: 10px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: var(--accent);
+            border-radius: 10px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #2980b9;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>♔ Premium Chess vs AI ♚</h1>
+            <button class="theme-toggle" onclick="toggleTheme()">🌙 Toggle Theme</button>
+        </div>
+        
+        <div class="game-layout">
+            <!-- Left Panel -->
+            <div class="side-panel">
+                <div class="panel-title">📊 Game Stats</div>
+                
+                <div class="timer-display">
+                    <div class="timer" id="white-timer">
+                        <div class="timer-label">Your Time</div>
+                        <div class="timer-value">10:00</div>
+                    </div>
+                    <div class="timer" id="black-timer">
+                        <div class="timer-label">AI Time</div>
+                        <div class="timer-value">10:00</div>
+                    </div>
+                </div>
+                
+                <div class="stats">
+                    <div class="stat-item">
+                        <div class="stat-label">Moves</div>
+                        <div class="stat-value" id="move-count">0</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Captures</div>
+                        <div class="stat-value" id="capture-count">0</div>
+                    </div>
+                </div>
+                
+                <div style="margin-top: 20px;">
+                    <div class="panel-title">Captured by You</div>
+                    <div class="captured-pieces" id="white-captured"></div>
+                    
+                    <div class="panel-title">Captured by AI</div>
+                    <div class="captured-pieces" id="black-captured"></div>
+                </div>
+            </div>
+            
+            <!-- Center Board -->
+            <div class="board-container">
+                <div class="difficulty">
+                    <label>AI Difficulty:</label>
+                    <select id="difficulty">
+                        <option value="1">Easy (1 move ahead)</option>
+                        <option value="2" selected>Medium (2 moves ahead)</option>
+                        <option value="3">Hard (3 moves ahead)</option>
+                        <option value="4">Expert (4 moves ahead)</option>
+                    </select>
+                </div>
+
+                <div class="info">
+                    <div class="player">🤖 Computer (Black)</div>
+                    <div class="turn" id="turn">Your Turn</div>
+                    <div class="player">👤 You (White)</div>
+                </div>
+
+                <div id="board"></div>
+
+                <div class="controls">
+                    <button onclick="newGame()" class="success">🔄 New Game</button>
+                    <button onclick="undoMove()" id="undo-btn" class="warning">↩️ Undo Move</button>
+                    <button onclick="showHint()" id="hint-btn">💡 Show Hint</button>
+                    <button onclick="resignGame()" id="resign-btn" class="danger">🏳️ Resign</button>
+                </div>
+
+                <div class="thinking" id="thinking">🤔 Computer is thinking...</div>
+                <div class="status" id="status"></div>
+            </div>
+            
+            <!-- Right Panel -->
+            <div class="side-panel">
+                <div class="panel-title">📜 Move History</div>
+                <div class="move-history scroll-smooth" id="move-history">
+                    <div style="text-align: center; color: var(--text-secondary); padding: 20px;">
+                        No moves yet
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const pieces = {
+            p: '♟︎', r: '♜', n: '♞', b: '♝', q: '♛', k: '♚',
+            P: '♙', R: '♖', N: '♘', B: '♗', Q: '♕', K: '♔'
+        };
+
+        let game = new Chess();
+        let selectedSquare = null;
+        let playerColor = 'w';
+        let lastMove = null;
+        let capturedPieces = { white: [], black: [] };
+        let moveHistory = [];
+        let hintTimeout = null;
+        let whiteTime = 600; // 10 minutes in seconds
+        let blackTime = 600;
+        let timerInterval = null;
+        let gameStarted = false;
+
+        function toggleTheme() {
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', newTheme);
+        }
+
+        function startTimer() {
+            if (timerInterval) clearInterval(timerInterval);
+            
+            timerInterval = setInterval(() => {
+                if (game.game_over()) {
+                    clearInterval(timerInterval);
+                    return;
+                }
+                
+                if (game.turn() === 'w') {
+                    whiteTime--;
+                    if (whiteTime <= 0) {
+                        whiteTime = 0;
+                        endGameByTime('black');
+                    }
+                } else {
+                    blackTime--;
+                    if (blackTime <= 0) {
+                        blackTime = 0;
+                        endGameByTime('white');
+                    }
+                }
+                
+                updateTimerDisplay();
+            }, 1000);
+        }
+
+        function updateTimerDisplay() {
+            const whiteTimer = document.getElementById('white-timer');
+            const blackTimer = document.getElementById('black-timer');
+            
+            whiteTimer.querySelector('.timer-value').textContent = formatTime(whiteTime);
+            blackTimer.querySelector('.timer-value').textContent = formatTime(blackTime);
+            
+            if (game.turn() === 'w') {
+                whiteTimer.classList.add('active');
+                blackTimer.classList.remove('active');
+            } else {
+                blackTimer.classList.add('active');
+                whiteTimer.classList.remove('active');
+            }
+        }
+
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return `${mins}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        function endGameByTime(winner) {
+            clearInterval(timerInterval);
+            const statusEl = document.getElementById('status');
+            statusEl.textContent = `Time's up! ${winner === 'white' ? 'You win' : 'Computer wins'} by timeout!`;
+            statusEl.className = 'status checkmate';
+            document.getElementById('turn').textContent = 'Game Over';
+        }
+
+        function renderBoard() {
+            const boardEl = document.getElementById('board');
+            boardEl.innerHTML = '';
+            const position = game.board();
+
+            for (let row = 0; row < 8; row++) {
+                for (let col = 0; col < 8; col++) {
+                    const square = document.createElement('div');
+                    square.className = 'square ' + ((row + col) % 2 === 0 ? 'light' : 'dark');
+                    square.dataset.square = String.fromCharCode(97 + col) + (8 - row);
+
+                    if (lastMove) {
+                        if (square.dataset.square === lastMove.from || 
+                            square.dataset.square === lastMove.to) {
+                            square.classList.add('last-move');
+                        }
+                    }
+
+                    const piece = position[row][col];
+                    if (piece) {
+                        const pieceSpan = document.createElement('span');
+                        pieceSpan.className = 'piece';
+                        pieceSpan.textContent = pieces[piece.type];
+                        
+                        // Fixed: Better piece coloring for visibility
+                        if (piece.color === 'w') {
+                            pieceSpan.style.color = '#ffffff';
+                            pieceSpan.style.textShadow = '0 0 8px #000, 0 0 8px #000, 2px 2px 4px #000';
+                        } else {
+                            pieceSpan.style.color = '#000000';
+                            pieceSpan.style.textShadow = '0 0 8px #fff, 0 0 8px #fff, 2px 2px 4px #fff';
+                        }
+                        
+                        square.appendChild(pieceSpan);
+                        
+                        if (piece.type === 'k' && game.in_check() && 
+                            ((game.turn() === 'w' && piece.color === 'w') || 
+                             (game.turn() === 'b' && piece.color === 'b'))) {
+                            square.classList.add('check');
+                        }
+                    }
+
+                    square.addEventListener('click', () => handleSquareClick(square.dataset.square));
+                    boardEl.appendChild(square);
+                }
+            }
+
+            updateStatus();
+            updateMoveHistory();
+            updateCapturedPieces();
+        }
+
+        function handleSquareClick(square) {
+            if (game.game_over() || game.turn() !== playerColor) return;
+
+            if (!gameStarted) {
+                gameStarted = true;
+                startTimer();
+            }
+
+            // Clear any hint highlights
+            clearHints();
+
+            const piece = game.get(square);
+
+            if (selectedSquare) {
+                const move = game.move({
+                    from: selectedSquare,
+                    to: square,
+                    promotion: 'q'
+                });
+
+                if (move) {
+                    lastMove = { from: selectedSquare, to: square };
+                    
+                    // Track captured pieces
+                    if (move.captured) {
+                        capturedPieces.white.push(move.captured);
+                        document.getElementById('capture-count').textContent = 
+                            capturedPieces.white.length + capturedPieces.black.length;
+                    }
+                    
+                    selectedSquare = null;
+                    renderBoard();
+                    playSound('move');
+                    
+                    if (game.in_checkmate()) {
+                        playSound('checkmate');
+                    } else if (game.in_check()) {
+                        playSound('check');
+                    }
+                    
+                    if (!game.game_over()) {
+                        setTimeout(makeComputerMove, 500);
+                    }
+                } else if (piece && piece.color === playerColor) {
+                    selectedSquare = square;
+                    highlightMoves(square);
+                } else {
+                    // Invalid move - shake animation
+                    const boardEl = document.getElementById('board');
+                    boardEl.classList.add('invalid-move');
+                    setTimeout(() => boardEl.classList.remove('invalid-move'), 500);
+                    selectedSquare = null;
+                    renderBoard();
+                }
+            } else if (piece && piece.color === playerColor) {
+                selectedSquare = square;
+                highlightMoves(square);
+            }
+        }
+
+        function highlightMoves(square) {
+            renderBoard();
+            
+            const squares = document.querySelectorAll('.square');
+            squares.forEach(sq => {
+                if (sq.dataset.square === square) {
+                    sq.classList.add('selected');
+                }
+            });
+
+            const moves = game.moves({ square: square, verbose: true });
+            moves.forEach(move => {
+                squares.forEach(sq => {
+                    if (sq.dataset.square === move.to) {
+                        if (move.captured) {
+                            sq.classList.add('capture');
+                        } else {
+                            sq.classList.add('highlight');
+                        }
+                    }
+                });
+            });
+        }
+
+        function clearHints() {
+            if (hintTimeout) {
+                clearTimeout(hintTimeout);
+                hintTimeout = null;
+            }
+            document.querySelectorAll('.hint-target').forEach(sq => {
+                sq.classList.remove('hint-target');
+            });
+        }
+
+        function makeComputerMove() {
+            if (game.game_over()) return;
+
+            document.getElementById('thinking').classList.add('active');
+            document.getElementById('hint-btn').disabled = true;
+            document.getElementById('undo-btn').disabled = true;
+            document.getElementById('difficulty').disabled = true;
+
+            setTimeout(() => {
+                const depth = parseInt(document.getElementById('difficulty').value);
+                const bestMove = getBestMove(depth);
+                
+                if (bestMove) {
+                    const move = game.move({
+                        from: bestMove.from,
+                        to: bestMove.to,
+                        promotion: 'q'
+                    });
+                    
+                    if (move) {
+                        lastMove = { from: bestMove.from, to: bestMove.to };
+                        
+                        if (move.captured) {
+                            capturedPieces.black.push(move.captured);
+                            document.getElementById('capture-count').textContent = 
+                                capturedPieces.white.length + capturedPieces.black.length;
+                        }
+                        
+                        renderBoard();
+                        playSound('move');
+                        
+                        if (game.in_checkmate()) {
+                            playSound('checkmate');
+                        } else if (game.in_check()) {
+                            playSound('check');
+                        }
+                    }
+                }
+
+                document.getElementById('thinking').classList.remove('active');
+                document.getElementById('hint-btn').disabled = false;
+                document.getElementById('undo-btn').disabled = false;
+            }, 300);
+        }
+
+        function getBestMove(depth) {
+            const moves = game.moves({ verbose: true });
+            if (moves.length === 0) return null;
+
+            let bestMove = null;
+            let bestValue = -Infinity;
+
+            for (const move of moves) {
+                game.move(move);
+                const value = -minimax(depth - 1, -Infinity, Infinity);
+                game.undo();
+
+                if (value > bestValue) {
+                    bestValue = value;
+                    bestMove = move;
+                }
+            }
+
+            return bestMove;
+        }
+
+        function minimax(depth, alpha, beta) {
+            if (depth === 0) return evaluateBoard();
+
+            const moves = game.moves({ verbose: true });
+            
+            if (moves.length === 0) {
+                if (game.in_checkmate()) return -Infinity;
+                return 0;
+            }
+
+            let maxEval = -Infinity;
+
+            for (const move of moves) {
+                game.move(move);
+                const evalScore = -minimax(depth - 1, -beta, -alpha);
+                game.undo();
+
+                maxEval = Math.max(maxEval, evalScore);
+                alpha = Math.max(alpha, evalScore);
+                if (beta <= alpha) break;
+            }
+
+            return maxEval;
+        }
+
+        function evaluateBoard() {
+            const pieceValues = { p: 100, n: 320, b: 330, r: 500, q: 900, k: 20000 };
+            const position = game.board();
+            let total = 0;
+
+            for (let row = 0; row < 8; row++) {
+                for (let col = 0; col < 8; col++) {
+                    const piece = position[row][col];
+                    if (piece) {
+                        const value = pieceValues[piece.type];
+                        total += piece.color === 'b' ? value : -value;
+                    }
+                }
+            }
+
+            return total;
+        }
+
+        function updateStatus() {
+            const statusEl = document.getElementById('status');
+            const turnEl = document.getElementById('turn');
+            
+            if (game.in_checkmate()) {
+                clearInterval(timerInterval);
+                statusEl.textContent = `Checkmate! ${game.turn() === 'w' ? 'Computer' : 'You'} win!`;
+                statusEl.className = 'status checkmate';
+                turnEl.textContent = 'Game Over';
+                turnEl.style.background = '#e74c3c';
+            } else if (game.in_draw()) {
+                clearInterval(timerInterval);
+                statusEl.textContent = 'Draw!';
+                statusEl.className = 'status draw';
+                turnEl.textContent = 'Game Over';
+                turnEl.style.background = '#95a5a6';
+            } else if (game.in_stalemate()) {
+                clearInterval(timerInterval);
+                statusEl.textContent = 'Stalemate!';
+                statusEl.className = 'status draw';
+                turnEl.textContent = 'Game Over';
+                turnEl.style.background = '#95a5a6';
+            } else if (game.in_check()) {
+                statusEl.textContent = 'Check!';
+                statusEl.className = 'status check-msg';
+                turnEl.textContent = game.turn() === 'w' ? 'Your Turn' : "Computer's Turn";
+            } else {
+                statusEl.textContent = '';
+                statusEl.className = 'status';
+                turnEl.textContent = game.turn() === 'w' ? 'Your Turn' : "Computer's Turn";
+            }
+            
+            document.getElementById('move-count').textContent = Math.floor(game.history().length / 2);
+        }
+
+        function updateMoveHistory() {
+            const historyEl = document.getElementById('move-history');
+            const history = game.history({ verbose: true });
+            
+            if (history.length === 0) {
+                historyEl.innerHTML = '<div style="text-align: center; color: var(--text-secondary); padding: 20px;">No moves yet</div>';
+                return;
+            }
+            
+            let html = '';
+            for (let i = 0; i < history.length; i += 2) {
+                const moveNum = Math.floor(i / 2) + 1;
+                const whiteMove = history[i].san;
+                const blackMove = history[i + 1] ? history[i + 1].san : '';
+                
+                html += `
+                    <div class="move-entry">
+                        <div class="move-number">${moveNum}.</div>
+                        <div>${whiteMove}</div>
+                        <div>${blackMove}</div>
+                    </div>
+                `;
+            }
+            
+            historyEl.innerHTML = html;
+            historyEl.scrollTop = historyEl.scrollHeight;
+        }
+
+        function updateCapturedPieces() {
+            const whiteCaptured = document.getElementById('white-captured');
+            const blackCaptured = document.getElementById('black-captured');
+            
+            whiteCaptured.innerHTML = capturedPieces.white.map(p => 
+                `<span class="captured-piece">${pieces[p]}</span>`
+            ).join('');
+            
+            blackCaptured.innerHTML = capturedPieces.black.map(p => 
+                `<span class="captured-piece">${pieces[p.toUpperCase()]}</span>`
+            ).join('');
+        }
+
+        function newGame() {
+            if (timerInterval) clearInterval(timerInterval);
+            game.reset();
+            selectedSquare = null;
+            lastMove = null;
+            capturedPieces = { white: [], black: [] };
+            moveHistory = [];
+            whiteTime = 600;
+            blackTime = 600;
+            gameStarted = false;
+            document.getElementById('difficulty').disabled = false;
+            document.getElementById('capture-count').textContent = '0';
+            updateTimerDisplay();
+            clearHints();
+            renderBoard();
+        }
+
+        function undoMove() {
+            if (game.history().length < 2) return;
+            
+            // Undo last two moves (player + computer)
+            const lastMove1 = game.undo();
+            const lastMove2 = game.undo();
+            
+            // Remove captured pieces
+            if (lastMove1 && lastMove1.captured) {
+                capturedPieces.black.pop();
+            }
+            if (lastMove2 && lastMove2.captured) {
+                capturedPieces.white.pop();
+            }
+            
+            lastMove = null;
+            selectedSquare = null;
+            document.getElementById('capture-count').textContent = 
+                capturedPieces.white.length + capturedPieces.black.length;
+            renderBoard();
+        }
+
+        function showHint() {
+            if (game.game_over() || game.turn() !== playerColor) return;
+            
+            clearHints();
+            
+            const move = getBestMove(2);
+            if (move) {
+                selectedSquare = move.from;
+                highlightMoves(move.from);
+                
+                setTimeout(() => {
+                    const squares = document.querySelectorAll('.square');
+                    squares.forEach(sq => {
+                        if (sq.dataset.square === move.to) {
+                            sq.classList.add('hint-target');
+                        }
+                    });
+                }, 100);
+                
+                // Clear hint after 3 seconds
+                hintTimeout = setTimeout(() => {
+                    clearHints();
+                    selectedSquare = null;
+                    renderBoard();
+                }, 3000);
+            }
+        }
+
+        function resignGame() {
+            if (game.game_over()) return;
+            
+            if (confirm('Are you sure you want to resign?')) {
+                clearInterval(timerInterval);
+                const statusEl = document.getElementById('status');
+                statusEl.textContent = 'You resigned. Computer wins!';
+                statusEl.className = 'status checkmate';
+                document.getElementById('turn').textContent = 'Game Over';
+                document.getElementById('turn').style.background = '#e74c3c';
+                game = new Chess('8/8/8/8/8/8/8/8 w - - 0 1'); // Empty board to prevent moves
+            }
+        }
+
+        function playSound(type) {
+            // Create simple beep sounds using Web Audio API
+            try {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                gainNode.gain.value = 0.1;
+                
+                switch(type) {
+                    case 'move':
+                        oscillator.frequency.value = 400;
+                        oscillator.start();
+                        oscillator.stop(audioContext.currentTime + 0.1);
+                        break;
+                    case 'capture':
+                        oscillator.frequency.value = 300;
+                        oscillator.start();
+                        oscillator.stop(audioContext.currentTime + 0.15);
+                        break;
+                    case 'check':
+                        oscillator.frequency.value = 600;
+                        oscillator.start();
+                        oscillator.stop(audioContext.currentTime + 0.2);
+                        break;
+                    case 'checkmate':
+                        oscillator.frequency.value = 800;
+                        oscillator.start();
+                        oscillator.stop(audioContext.currentTime + 0.5);
+                        break;
+                }
+            } catch (e) {
+                // Silently fail if audio not supported
+            }
+        }
+
+        // Initialize game
+        renderBoard();
+        updateTimerDisplay();
+    </script>
+</body>
+</html>
+

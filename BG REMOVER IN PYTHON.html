@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Offline BG Remover</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(ffffff, #667eea 0%, #000000 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 800px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        
+        .upload-area {
+            border: 3px dashed #667eea;
+            border-radius: 15px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: #f8f9ff;
+        }
+        
+        .upload-area:hover {
+            border-color: #764ba2;
+            background: #f0f1ff;
+        }
+        
+        .upload-area.dragover {
+            border-color: #764ba2;
+            background: #e8e9ff;
+            transform: scale(1.02);
+        }
+        
+        input[type="file"] {
+            display: none;
+        }
+        
+        .upload-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+        
+        .controls {
+            margin: 20px 0;
+            display: none;
+        }
+        
+        .slider-group {
+            margin: 15px 0;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+        }
+        
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: #ddd;
+            outline: none;
+            -webkit-appearance: none;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+        }
+        
+        input[type="range"]::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+            border: none;
+        }
+        
+        .canvas-container {
+            display: none;
+            margin-top: 20px;
+            text-align: center;
+        }
+        
+        canvas {
+            max-width: 100%;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            margin: 10px 5px;
+            transition: transform 0.2s;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .value-display {
+            display: inline-block;
+            background: #f0f1ff;
+            padding: 4px 12px;
+            border-radius: 5px;
+            margin-left: 10px;
+            color: #667eea;
+            font-weight: 600;
+        }
+        
+        .error {
+            color: #e74c3c;
+            background: #ffebee;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            display: none;
+        }
+        
+        .processing {
+            color: #667eea;
+            background: #f0f1ff;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>&#127912; Background Remover</h1>
+        <p class="subtitle">Works 100% offline • Minimal RAM usage</p>
+        
+        <div class="upload-area" id="uploadArea">
+            <div class="upload-icon">&#128248;</div>
+            <h3>Click or drag image here</h3>
+            <p style="color: #999; margin-top: 10px;">Supports JPG, PNG (max 800px for best performance)</p>
+            <input type="file" id="fileInput" accept="image/*">
+        </div>
+        
+        <div class="error" id="errorMsg"></div>
+        <div class="processing" id="processingMsg">Processing...</div>
+        
+        <div class="controls" id="controls">
+            <div class="slider-group">
+                <label>Sensitivity <span class="value-display" id="thresholdVal">30</span></label>
+                <input type="range" id="threshold" min="1" max="100" value="30">
+            </div>
+            
+            <div class="slider-group">
+                <label>Smoothness <span class="value-display" id="blurVal">1</span></label>
+                <input type="range" id="blur" min="0" max="5" value="1">
+            </div>
+            
+            <button class="btn" id="processBtn" onclick="processImage()">Remove Background</button>
+        </div>
+        
+        <div class="canvas-container" id="canvasContainer">
+            <canvas id="canvas"></canvas>
+            <div>
+                <button class="btn" onclick="downloadImage()">Download PNG</button>
+                <button class="btn" onclick="reset()">New Image</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let img = null;
+        const fileInput = document.getElementById('fileInput');
+        const uploadArea = document.getElementById('uploadArea');
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        const controls = document.getElementById('controls');
+        const canvasContainer = document.getElementById('canvasContainer');
+        const thresholdSlider = document.getElementById('threshold');
+        const blurSlider = document.getElementById('blur');
+        const errorMsg = document.getElementById('errorMsg');
+        const processingMsg = document.getElementById('processingMsg');
+        const processBtn = document.getElementById('processBtn');
+        
+        function showError(msg) {
+            errorMsg.textContent = msg;
+            errorMsg.style.display = 'block';
+            setTimeout(() => errorMsg.style.display = 'none', 4000);
+        }
+        
+        function showProcessing(show) {
+            processingMsg.style.display = show ? 'block' : 'none';
+            processBtn.disabled = show;
+        }
+        
+        uploadArea.addEventListener('click', () => fileInput.click());
+        
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+        
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+        
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const file = e.dataTransfer.files[0];
+            if (file && file.type.startsWith('image/')) {
+                loadImage(file);
+            } else {
+                showError('Please drop a valid image file');
+            }
+        });
+        
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files[0]) {
+                loadImage(e.target.files[0]);
+            }
+        });
+        
+        thresholdSlider.addEventListener('input', (e) => {
+            document.getElementById('thresholdVal').textContent = e.target.value;
+        });
+        
+        blurSlider.addEventListener('input', (e) => {
+            document.getElementById('blurVal').textContent = e.target.value;
+        });
+        
+        function loadImage(file) {
+            try {
+                const reader = new FileReader();
+                reader.onerror = () => showError('Failed to read file');
+                reader.onload = (e) => {
+                    img = new Image();
+                    img.onerror = () => showError('Failed to load image');
+                    img.onload = () => {
+                        uploadArea.style.display = 'none';
+                        controls.style.display = 'block';
+                        processImage();
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            } catch (err) {
+                showError('Error loading image: ' + err.message);
+            }
+        }
+        
+        function processImage() {
+            if (!img) return;
+            
+            showProcessing(true);
+            
+            // Use setTimeout to allow UI to update
+            setTimeout(() => {
+                try {
+                    // Reduced max size for lighter performance
+                    const maxSize = 800;
+                    let w = img.width;
+                    let h = img.height;
+                    
+                    if (w > maxSize || h > maxSize) {
+                        if (w > h) {
+                            h = Math.round((h / w) * maxSize);
+                            w = maxSize;
+                        } else {
+                            w = Math.round((w / h) * maxSize);
+                            h = maxSize;
+                        }
+                    }
+                    
+                    canvas.width = w;
+                    canvas.height = h;
+                    ctx.drawImage(img, 0, 0, w, h);
+                    
+                    const imageData = ctx.getImageData(0, 0, w, h);
+                    const data = imageData.data;
+                    
+                    const threshold = parseInt(thresholdSlider.value);
+                    
+                    // FIXED: Sample border region (5% from edges) instead of just corners
+                    const borderSize = Math.floor(Math.min(w, h) * 0.05);
+                    let bgR = 0, bgG = 0, bgB = 0, count = 0;
+                    
+                    // Sample top and bottom edges
+                    for (let x = 0; x < w; x += 5) {
+                        for (let y = 0; y < borderSize; y++) {
+                            const i = (y * w + x) * 4;
+                            bgR += data[i];
+                            bgG += data[i + 1];
+                            bgB += data[i + 2];
+                            count++;
+                        }
+                        for (let y = h - borderSize; y < h; y++) {
+                            const i = (y * w + x) * 4;
+                            bgR += data[i];
+                            bgG += data[i + 1];
+                            bgB += data[i + 2];
+                            count++;
+                        }
+                    }
+                    
+                    // Sample left and right edges
+                    for (let y = borderSize; y < h - borderSize; y += 5) {
+                        for (let x = 0; x < borderSize; x++) {
+                            const i = (y * w + x) * 4;
+                            bgR += data[i];
+                            bgG += data[i + 1];
+                            bgB += data[i + 2];
+                            count++;
+                        }
+                        for (let x = w - borderSize; x < w; x++) {
+                            const i = (y * w + x) * 4;
+                            bgR += data[i];
+                            bgG += data[i + 1];
+                            bgB += data[i + 2];
+                            count++;
+                        }
+                    }
+                    
+                    bgR = Math.round(bgR / count);
+                    bgG = Math.round(bgG / count);
+                    bgB = Math.round(bgB / count);
+                    
+                    // Remove background
+                    for (let i = 0; i < data.length; i += 4) {
+                        const r = data[i];
+                        const g = data[i + 1];
+                        const b = data[i + 2];
+                        
+                        const diff = Math.abs(r - bgR) + Math.abs(g - bgG) + Math.abs(b - bgB);
+                        
+                        if (diff < threshold * 3) {
+                            data[i + 3] = 0;
+                        }
+                    }
+                    
+                    // FIXED: Proper blur with temporary buffer
+                    const blurAmount = parseInt(blurSlider.value);
+                    if (blurAmount > 0) {
+                        const tempAlpha = new Uint8ClampedArray(w * h);
+                        
+                        // Copy current alpha
+                        for (let i = 0; i < w * h; i++) {
+                            tempAlpha[i] = data[i * 4 + 3];
+                        }
+                        
+                        for (let pass = 0; pass < blurAmount; pass++) {
+                            // Read from tempAlpha, write to data
+                            for (let y = 1; y < h - 1; y++) {
+                                for (let x = 1; x < w - 1; x++) {
+                                    const idx = y * w + x;
+                                    const alpha = tempAlpha[idx];
+                                    
+                                    // Only blur edges (partial transparency)
+                                    if (alpha > 0 && alpha < 255) {
+                                        let sum = 0;
+                                        // 3x3 kernel
+                                        sum += tempAlpha[idx - w - 1];
+                                        sum += tempAlpha[idx - w];
+                                        sum += tempAlpha[idx - w + 1];
+                                        sum += tempAlpha[idx - 1];
+                                        sum += tempAlpha[idx];
+                                        sum += tempAlpha[idx + 1];
+                                        sum += tempAlpha[idx + w - 1];
+                                        sum += tempAlpha[idx + w];
+                                        sum += tempAlpha[idx + w + 1];
+                                        
+                                        data[idx * 4 + 3] = Math.round(sum / 9);
+                                    }
+                                }
+                            }
+                            
+                            // Copy back to temp for next pass
+                            for (let i = 0; i < w * h; i++) {
+                                tempAlpha[i] = data[i * 4 + 3];
+                            }
+                        }
+                    }
+                    
+                    ctx.putImageData(imageData, 0, 0);
+                    canvasContainer.style.display = 'block';
+                    showProcessing(false);
+                } catch (err) {
+                    showError('Processing failed: ' + err.message);
+                    showProcessing(false);
+                }
+            }, 50);
+        }
+        
+        function downloadImage() {
+            try {
+                const link = document.createElement('a');
+                link.download = 'background-removed.png';
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            } catch (err) {
+                showError('Download failed: ' + err.message);
+            }
+        }
+        
+        function reset() {
+            uploadArea.style.display = 'block';
+            controls.style.display = 'none';
+            canvasContainer.style.display = 'none';
+            fileInput.value = '';
+            img = null;
+            canvas.width = 0;
+            canvas.height = 0;
+        }
+    </script>
+</body>
+</html>

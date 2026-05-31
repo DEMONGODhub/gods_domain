@@ -1,0 +1,961 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Grand Piano Studio</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=JetBrains+Mono:wght@300;400;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
+<style>
+:root {
+  --bg:       #07070d;
+  --panel:    #0d0d18;
+  --panel2:   #111120;
+  --border:   #1e1e30;
+  --border2:  #2a2a40;
+  --gold:     #c8a84b;
+  --gold-dim: #7a6020;
+  --gold-glow:rgba(200,168,75,0.35);
+  --copper:   #b06030;
+  --ivory:    #f5f0e3;
+  --ivory-p:  #ffe98a;
+  --ebony:    #0e0e16;
+  --ebony-p:  #c8a84b;
+  --text:     #9090b0;
+  --text-b:   #c8c8e0;
+  --wk: 40px;
+  --wh: 172px;
+  --bk: 25px;
+  --bh: 108px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+
+body {
+  background: var(--bg);
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+  background-image:
+    radial-gradient(ellipse 800px 400px at 50% -100px, rgba(200,168,75,0.06) 0%, transparent 70%),
+    radial-gradient(ellipse 400px 300px at 0% 60%, rgba(176,96,48,0.04) 0%, transparent 50%);
+}
+
+/* ── HEADER ──────────────────────────────────────────── */
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 22px 36px 18px;
+  border-bottom: 1px solid var(--border);
+  position: relative;
+}
+.brand {
+  display: flex;
+  flex-direction: column;
+}
+.logo {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(22px, 3.5vw, 40px);
+  font-weight: 900;
+  letter-spacing: 3px;
+  color: var(--gold);
+  text-shadow: 0 0 40px rgba(200,168,75,0.3);
+}
+.sub {
+  font-size: 9px;
+  letter-spacing: 5px;
+  color: var(--gold-dim);
+  text-transform: uppercase;
+  margin-top: 3px;
+}
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+.load-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border: 1px solid var(--gold-dim);
+  color: var(--gold-dim);
+  font-size: 9px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  transition: all 0.3s;
+}
+.load-chip.ready { border-color: var(--gold); color: var(--gold); box-shadow: 0 0 12px var(--gold-glow); }
+.spinner {
+  width: 12px; height: 12px;
+  border: 1.5px solid var(--gold-dim);
+  border-top-color: var(--gold);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.ready-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 8px var(--gold); }
+
+/* ── VISUALIZER ──────────────────────────────────────── */
+.viz-wrap { padding: 16px 36px 0; }
+canvas#viz {
+  width: 100%;
+  height: 64px;
+  display: block;
+  background: var(--panel);
+  border: 1px solid var(--border);
+}
+
+/* ── HUD / STATUS ────────────────────────────────────── */
+.hud {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  padding: 12px 36px;
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+  gap: 1px;
+}
+.hud-cell {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  padding: 10px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 120px;
+}
+.hud-label {
+  font-size: 8px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: var(--gold-dim);
+}
+.hud-value {
+  font-family: 'Playfair Display', serif;
+  font-size: 20px;
+  color: var(--gold);
+  letter-spacing: 2px;
+  min-height: 28px;
+  line-height: 1;
+}
+.hud-value.small { font-size: 13px; letter-spacing: 1px; font-family: 'JetBrains Mono', monospace; }
+.hud-cell.wide { min-width: 200px; }
+
+/* Sustain LED */
+.sustain-led {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 2px;
+}
+.led {
+  width: 10px; height: 10px; border-radius: 50%;
+  background: var(--border2);
+  border: 1px solid var(--border2);
+  transition: all 0.05s;
+}
+.led.on { background: var(--gold); border-color: var(--gold); box-shadow: 0 0 10px var(--gold-glow), 0 0 4px var(--gold); }
+.led-label { font-size: 9px; letter-spacing: 2px; color: var(--text); }
+
+/* Metro dots */
+.metro-dots { display: flex; gap: 6px; align-items: center; margin-top: 4px; }
+.mdot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--border2);
+  border: 1px solid var(--border2);
+  transition: all 0.05s;
+}
+.mdot.beat { background: var(--gold); border-color: var(--gold); box-shadow: 0 0 8px var(--gold-glow); }
+
+/* ── CONTROLS ────────────────────────────────────────── */
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 36px;
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+.ctrl {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  padding: 8px 16px;
+}
+.ctrl-lbl { font-size: 8px; letter-spacing: 3px; text-transform: uppercase; color: var(--gold-dim); }
+.ctrl-val { font-size: 13px; color: var(--gold); min-width: 32px; text-align: right; }
+
+input[type=range] {
+  -webkit-appearance: none;
+  background: var(--border2);
+  height: 2px; width: 90px;
+  border-radius: 1px; outline: none; cursor: pointer;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 13px; height: 13px;
+  background: var(--gold); border-radius: 50%;
+  box-shadow: 0 0 8px var(--gold-glow);
+  cursor: pointer;
+}
+
+.btn {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 2px;
+  padding: 8px 14px;
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: all 0.2s;
+}
+.btn:hover, .btn.on { border-color: var(--gold); color: var(--gold); box-shadow: 0 0 10px var(--gold-glow); }
+
+/* ── KEYBOARD SECTION ────────────────────────────────── */
+.kb-wrap {
+  padding: 20px 0 0;
+  position: relative;
+}
+.kb-scroll {
+  overflow-x: auto;
+  padding: 0 36px 20px;
+}
+.kb-scroll::-webkit-scrollbar { height: 5px; background: var(--panel); }
+.kb-scroll::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+.keyboard {
+  position: relative;
+  display: flex;
+  min-width: max-content;
+  height: calc(var(--wh) + 20px);
+  align-items: flex-start;
+  padding-top: 0;
+}
+
+/* ── WHITE KEYS ──────────────────────────────────────── */
+.wk {
+  width: var(--wk);
+  height: var(--wh);
+  flex-shrink: 0;
+  position: relative;
+  cursor: pointer;
+  z-index: 1;
+  border-radius: 0 0 5px 5px;
+  border: 1px solid #7a7a66;
+  border-top: none;
+  background: linear-gradient(175deg, #e2dece 0%, var(--ivory) 40%, #f0ece0 100%);
+  box-shadow: 2px 5px 10px rgba(0,0,0,0.6), inset -1px 0 0 rgba(0,0,0,0.08), inset 0 -2px 4px rgba(0,0,0,0.07);
+  transition: background 0.05s, transform 0.05s, box-shadow 0.05s;
+  user-select: none;
+}
+.wk + .wk { border-left: none; }
+.wk:hover { background: linear-gradient(175deg, #eaeedc 0%, #f0f5e2 40%, #f5f8e8 100%); }
+.wk.pressed {
+  background: linear-gradient(175deg, var(--ivory-p) 0%, #fff4b0 40%, #ffe88a 100%);
+  box-shadow: 1px 3px 6px rgba(0,0,0,0.5), 0 0 18px rgba(200,168,75,0.5), inset 0 2px 4px rgba(0,0,0,0.1);
+  transform: translateY(3px);
+}
+/* Middle C accent */
+.wk.mc { border-bottom: 3px solid var(--gold-dim); }
+
+.wk .lbl {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  pointer-events: none;
+}
+.wk .lbl .kb-key {
+  font-size: 8px;
+  font-weight: 600;
+  background: rgba(0,0,0,0.09);
+  color: #5a5a48;
+  border-radius: 2px;
+  padding: 1px 4px;
+  min-width: 14px;
+  text-align: center;
+  letter-spacing: 0;
+}
+.wk .lbl .note {
+  font-size: 7px;
+  color: rgba(80,80,60,0.5);
+  letter-spacing: 0;
+}
+.wk.pressed .lbl .kb-key { color: #6a5000; background: rgba(0,0,0,0.06); }
+.wk.pressed .lbl .note { color: rgba(100,75,0,0.6); }
+
+/* ── BLACK KEYS ──────────────────────────────────────── */
+.bk {
+  width: var(--bk);
+  height: var(--bh);
+  position: absolute;
+  top: 0;
+  z-index: 2;
+  cursor: pointer;
+  border-radius: 0 0 4px 4px;
+  border: 1px solid #04040a;
+  background: linear-gradient(180deg, #1e1e2a 0%, var(--ebony) 60%, #181820 100%);
+  box-shadow: 2px 6px 12px rgba(0,0,0,0.9), inset -1px 0 1px rgba(255,255,255,0.03), inset 0 -2px 3px rgba(0,0,0,0.5);
+  transition: background 0.05s, transform 0.05s, box-shadow 0.05s;
+  user-select: none;
+}
+.bk:hover { background: linear-gradient(180deg, #2a2a38 0%, #171720 60%, #1a1a24 100%); }
+.bk.pressed {
+  background: linear-gradient(180deg, var(--ebony-p) 0%, #9a7a28 60%, #7a5e16 100%);
+  box-shadow: 1px 3px 6px rgba(0,0,0,0.8), 0 0 16px rgba(200,168,75,0.6), inset 0 2px 3px rgba(0,0,0,0.3);
+  transform: translateY(2px);
+}
+
+.bk .blbl {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  pointer-events: none;
+  white-space: nowrap;
+}
+.bk .blbl .kb-key {
+  font-size: 7px;
+  font-weight: 600;
+  color: rgba(180,160,80,0.6);
+  background: rgba(255,255,255,0.04);
+  border-radius: 2px;
+  padding: 1px 3px;
+  min-width: 12px;
+  text-align: center;
+}
+.bk .blbl .note { font-size: 6px; color: rgba(180,160,80,0.3); }
+.bk.pressed .blbl .kb-key { color: #100c00; background: rgba(0,0,0,0.1); }
+.bk.pressed .blbl .note { color: rgba(10,8,0,0.7); }
+
+/* ── OCTAVE RANGE LABELS ─────────────────────────────── */
+.oct-labels {
+  display: flex;
+  padding: 4px 36px 0;
+  min-width: max-content;
+  overflow: hidden;
+  pointer-events: none;
+}
+.oct-lbl {
+  width: calc(var(--wk) * 7);
+  text-align: center;
+  font-size: 8px;
+  letter-spacing: 3px;
+  color: rgba(200,168,75,0.2);
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+/* ── LEGEND ──────────────────────────────────────────── */
+.legend {
+  padding: 12px 36px 24px;
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  font-size: 8px;
+  letter-spacing: 2px;
+  color: rgba(144,144,176,0.3);
+  line-height: 1.8;
+}
+.legend em { color: var(--gold-dim); font-style: normal; }
+.legend .sep { color: rgba(200,168,75,0.15); }
+
+/* ── PARTICLES ───────────────────────────────────────── */
+.particle {
+  position: fixed;
+  pointer-events: none;
+  border-radius: 50%;
+  z-index: 999;
+  animation: fup 0.7s ease-out forwards;
+}
+@keyframes fup {
+  0%   { opacity: 1; transform: translateY(0) scale(1); }
+  100% { opacity: 0; transform: translateY(-55px) scale(0.1); }
+}
+
+/* ── RESPONSIVE ──────────────────────────────────────── */
+@media (max-width: 600px) {
+  :root { --wk: 30px; --wh: 136px; --bk: 19px; --bh: 84px; }
+  header { padding: 16px 16px 12px; }
+  .hud, .controls, .legend { padding-left: 16px; padding-right: 16px; }
+  .kb-scroll { padding: 0 16px 20px; }
+  .viz-wrap { padding: 12px 16px 0; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="logo">Grand Piano</div>
+    <div class="sub">Professional Studio · Salamander Grand</div>
+  </div>
+  <div class="header-right">
+    <div class="load-chip" id="loadChip">
+      <div class="spinner" id="loadSpinner"></div>
+      <span id="loadTxt">Loading samples…</span>
+    </div>
+  </div>
+</header>
+
+<div class="viz-wrap">
+  <canvas id="viz"></canvas>
+</div>
+
+<!-- HUD -->
+<div class="hud">
+  <div class="hud-cell wide">
+    <div class="hud-label">Active Notes</div>
+    <div class="hud-value small" id="noteDisplay">—</div>
+  </div>
+  <div class="hud-cell wide">
+    <div class="hud-label">Chord</div>
+    <div class="hud-value" id="chordDisplay">—</div>
+  </div>
+  <div class="hud-cell">
+    <div class="hud-label">Sustain Pedal</div>
+    <div class="sustain-led">
+      <div class="led" id="sustainLed"></div>
+      <span class="led-label">SPACE BAR</span>
+    </div>
+  </div>
+  <div class="hud-cell">
+    <div class="hud-label">Metronome</div>
+    <div class="metro-dots" id="metroDots">
+      <div class="mdot" id="m0"></div>
+      <div class="mdot" id="m1"></div>
+      <div class="mdot" id="m2"></div>
+      <div class="mdot" id="m3"></div>
+    </div>
+  </div>
+  <div class="hud-cell">
+    <div class="hud-label">Key Signature</div>
+    <div class="hud-value small" id="keyDisplay">—</div>
+  </div>
+</div>
+
+<!-- Controls -->
+<div class="controls">
+  <div class="ctrl">
+    <span class="ctrl-lbl">Volume</span>
+    <input type="range" id="volR" min="0" max="100" value="78" oninput="setVol(this.value)">
+    <span class="ctrl-val" id="volV">78</span>
+  </div>
+  <div class="ctrl">
+    <span class="ctrl-lbl">Reverb</span>
+    <input type="range" id="revR" min="0" max="100" value="30" oninput="setRev(this.value)">
+    <span class="ctrl-val" id="revV">30</span>
+  </div>
+  <div class="ctrl">
+    <span class="ctrl-lbl">BPM</span>
+    <input type="range" id="bpmR" min="40" max="240" value="120" oninput="setBpm(this.value)">
+    <span class="ctrl-val" id="bpmV">120</span>
+  </div>
+  <button class="btn" id="metroBtn" onclick="toggleMetro()">♩ Metronome</button>
+  <div class="ctrl">
+    <span class="ctrl-lbl">Time Sig</span>
+    <select id="timeSig" style="background:var(--panel);border:none;color:var(--gold);font-family:inherit;font-size:11px;outline:none;cursor:pointer" onchange="setTimeSig(this.value)">
+      <option value="4">4/4</option>
+      <option value="3">3/4</option>
+      <option value="2">2/4</option>
+      <option value="6">6/8</option>
+    </select>
+  </div>
+</div>
+
+<!-- Piano Keyboard -->
+<div class="kb-wrap">
+  <div class="kb-scroll" id="kbScroll">
+    <div class="keyboard" id="keyboard"></div>
+  </div>
+</div>
+
+<!-- Legend -->
+<div class="legend">
+  <span>White keys:</span>
+  <em>Z–M</em><span>= C3–B3</span>
+  <span class="sep">|</span>
+  <em>A–L</em><span>= C4–D5</span>
+  <span class="sep">|</span>
+  <em>Q–P</em><span>= E5–G6</span>
+  <span class="sep">·</span>
+  <span>Black keys:</span>
+  <em>1–5</em><span>= C#3–A#3</span>
+  <span class="sep">|</span>
+  <em>6–0</em><span>= C#4–A#4</span>
+  <span class="sep">|</span>
+  <em>– =</em><span>= C#5 D#5</span>
+  <span class="sep">·</span>
+  <em>SPACE</em><span>= Sustain Pedal</span>
+  <span class="sep">·</span>
+  <span>Mouse/Touch works for full range</span>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════
+   KEYBOARD MAPPING
+   All 26 letters → white keys spanning C3–G6
+   Number row     → black keys (C#3–D#5)
+   Space          → sustain pedal
+═══════════════════════════════════════════════════════════════ */
+const KEY_MAP = {
+  // ── White keys — 26 letters ──────────────────────────────
+  'z': {note:'C',  oct:3}, 'x': {note:'D',  oct:3}, 'c': {note:'E',  oct:3},
+  'v': {note:'F',  oct:3}, 'b': {note:'G',  oct:3}, 'n': {note:'A',  oct:3},
+  'm': {note:'B',  oct:3},
+
+  'a': {note:'C',  oct:4}, 's': {note:'D',  oct:4}, 'd': {note:'E',  oct:4},
+  'f': {note:'F',  oct:4}, 'g': {note:'G',  oct:4}, 'h': {note:'A',  oct:4},
+  'j': {note:'B',  oct:4}, 'k': {note:'C',  oct:5}, 'l': {note:'D',  oct:5},
+
+  'q': {note:'E',  oct:5}, 'w': {note:'F',  oct:5}, 'e': {note:'G',  oct:5},
+  'r': {note:'A',  oct:5}, 't': {note:'B',  oct:5}, 'y': {note:'C',  oct:6},
+  'u': {note:'D',  oct:6}, 'i': {note:'E',  oct:6}, 'o': {note:'F',  oct:6},
+  'p': {note:'G',  oct:6},
+
+  // ── Black keys — number row ──────────────────────────────
+  '1': {note:'C#', oct:3}, '2': {note:'D#', oct:3}, '3': {note:'F#', oct:3},
+  '4': {note:'G#', oct:3}, '5': {note:'A#', oct:3},
+  '6': {note:'C#', oct:4}, '7': {note:'D#', oct:4}, '8': {note:'F#', oct:4},
+  '9': {note:'G#', oct:4}, '0': {note:'A#', oct:4},
+  '-': {note:'C#', oct:5}, '=': {note:'D#', oct:5},
+};
+
+// Reverse: 'C4' → 'A', 'C#4' → '6', etc.
+const N2K = {};
+for (const [k, v] of Object.entries(KEY_MAP)) N2K[v.note + v.oct] = k.toUpperCase();
+
+/* ═══════════════════════════════════════════════════════════════
+   SALAMANDER GRAND PIANO SAMPLES  (full 88-key coverage)
+═══════════════════════════════════════════════════════════════ */
+const SALA = 'https://tonejs.github.io/audio/salamander/';
+const SALA_URLS = {
+  'A0':'A0.mp3','C1':'C1.mp3','D#1':'Ds1.mp3','F#1':'Fs1.mp3','A1':'A1.mp3',
+  'C2':'C2.mp3','D#2':'Ds2.mp3','F#2':'Fs2.mp3','A2':'A2.mp3',
+  'C3':'C3.mp3','D#3':'Ds3.mp3','F#3':'Fs3.mp3','A3':'A3.mp3',
+  'C4':'C4.mp3','D#4':'Ds4.mp3','F#4':'Fs4.mp3','A4':'A4.mp3',
+  'C5':'C5.mp3','D#5':'Ds5.mp3','F#5':'Fs5.mp3','A5':'A5.mp3',
+  'C6':'C6.mp3','D#6':'Ds6.mp3','F#6':'Fs6.mp3','A6':'A6.mp3',
+  'C7':'C7.mp3','D#7':'Ds7.mp3','F#7':'Fs7.mp3','A7':'A7.mp3',
+};
+
+/* ═══════════════════════════════════════════════════════════════
+   AUDIO STATE
+═══════════════════════════════════════════════════════════════ */
+let sampler = null, reverb = null, vol = null, waveform = null;
+let samplerReady = false;
+let sustainOn = false;
+const heldKeys  = new Set(); // computer keys currently down
+const liveNotes = new Set(); // note IDs currently sounding ('C#4')
+const pedNotes  = new Set(); // notes sustaining via pedal
+
+async function initAudio() {
+  await Tone.start();
+
+  reverb = new Tone.Reverb({ decay: 3.5, preDelay: 0.015, wet: 0.3 });
+  await reverb.generate();
+
+  vol = new Tone.Volume(-4);
+  waveform = new Tone.Analyser({ type: 'waveform', size: 512 });
+
+  const urls = {};
+  for (const [n, f] of Object.entries(SALA_URLS)) urls[n] = SALA + f;
+
+  sampler = new Tone.Sampler({
+    urls,
+    release: 1.4,
+    onload: () => {
+      samplerReady = true;
+      const chip = document.getElementById('loadChip');
+      chip.innerHTML = '<div class="ready-dot"></div><span>Salamander Grand · Ready</span>';
+      chip.classList.add('ready');
+      document.getElementById('loadSpinner') && document.getElementById('loadSpinner').remove();
+    },
+    onerror: () => {
+      document.getElementById('loadTxt').textContent = '⚠ Check connection';
+    }
+  }).chain(reverb, vol, waveform, Tone.getDestination());
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   PLAY / STOP
+═══════════════════════════════════════════════════════════════ */
+function nid(note, oct) { return note + oct; }
+
+function playNote(note, oct) {
+  if (!samplerReady) return;
+  const id = nid(note, oct);
+  if (liveNotes.has(id)) return;
+  Tone.start();
+  const vel = 0.55 + Math.random() * 0.35; // realistic velocity variation
+  sampler.triggerAttack(id, Tone.now(), vel);
+  liveNotes.add(id);
+  pedNotes.delete(id);
+  setKeyClass(note, oct, true);
+  updateHud();
+  spawnParticle(note, oct, note.includes('#'));
+}
+
+function stopNote(note, oct) {
+  const id = nid(note, oct);
+  if (!liveNotes.has(id)) return;
+  if (sustainOn) {
+    pedNotes.add(id);
+  } else {
+    sampler.triggerRelease(id, Tone.now());
+    liveNotes.delete(id);
+  }
+  setKeyClass(note, oct, false);
+  updateHud();
+}
+
+function setKeyClass(note, oct, on) {
+  const el = document.querySelector(`[data-nid="${nid(note, oct)}"]`);
+  if (el) el.classList.toggle('pressed', on);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SUSTAIN PEDAL
+═══════════════════════════════════════════════════════════════ */
+function setSustain(on) {
+  sustainOn = on;
+  document.getElementById('sustainLed').classList.toggle('on', on);
+  if (!on) {
+    pedNotes.forEach(id => {
+      sampler.triggerRelease(id, Tone.now());
+      liveNotes.delete(id);
+    });
+    pedNotes.clear();
+    // Remove pressed visual from all keys no longer held
+    document.querySelectorAll('[data-nid]').forEach(el => {
+      const id = el.dataset.nid;
+      if (!liveNotes.has(id)) el.classList.remove('pressed');
+    });
+    updateHud();
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   CHORD & KEY SIGNATURE DETECTION
+═══════════════════════════════════════════════════════════════ */
+const CHROMATIC = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+
+const CHORD_SHAPES = {
+  '0,4,7':     'maj',   '0,3,7':     'min',
+  '0,4,7,11':  'maj7',  '0,3,7,10':  'min7',
+  '0,4,7,10':  '7',     '0,3,6':     'dim',
+  '0,4,8':     'aug',   '0,3,6,9':   'dim7',
+  '0,2,7':     'sus2',  '0,5,7':     'sus4',
+  '0,4,7,9':   '6',     '0,3,7,9':   'm6',
+  '0,3,6,10':  'ø7',    '0,4,6,10':  '7♭5',
+  '0,4,7,10,2':'9',     '0,3,7,10,2':'m9',
+};
+
+function detectChord(noteIds) {
+  if (noteIds.length === 0) return '—';
+  if (noteIds.length === 1) return noteIds[0].replace(/\d/g,'');
+  const semis = noteIds.map(n => {
+    const name = n.replace(/\d+$/,'');
+    const oct  = parseInt(n.match(/\d+$/)[0]);
+    return CHROMATIC.indexOf(name) + oct * 12;
+  }).sort((a,b) => a-b);
+
+  for (let r = 0; r < semis.length; r++) {
+    const root     = semis[r];
+    const ivs      = [...new Set(semis.map(s => ((s-root)%12+12)%12))].sort((a,b)=>a-b);
+    const key      = ivs.join(',');
+    const quality  = CHORD_SHAPES[key];
+    if (quality) return CHROMATIC[root % 12] + ' ' + quality;
+  }
+  return noteIds.length + ' notes';
+}
+
+const KEY_SIGS = {
+  'C maj':'C D E F G A B',       'G maj':'G A B C D E F#',
+  'D maj':'D E F# G A B C#',     'A maj':'A B C# D E F# G#',
+  'E maj':'E F# G# A B C# D#',   'F maj':'F G A A# C D E',
+  'A# maj':'A# C D D# F G A',    'D# maj':'D# F G G# A# C D',
+};
+
+function guessKeySig(noteIds) {
+  if (noteIds.length < 3) return '—';
+  const names = [...new Set(noteIds.map(n => n.replace(/\d+$/,'')))];
+  let best = '—', bestScore = -1;
+  for (const [sig, notes] of Object.entries(KEY_SIGS)) {
+    const arr = notes.split(' ');
+    const score = names.filter(n => arr.includes(n)).length;
+    if (score > bestScore) { bestScore = score; best = sig; }
+  }
+  return best;
+}
+
+function updateHud() {
+  const notes = [...liveNotes, ...pedNotes];
+  const uniq = [...new Set(notes)];
+  document.getElementById('noteDisplay').textContent = uniq.length ? uniq.join('  ') : '—';
+  document.getElementById('chordDisplay').textContent = detectChord(uniq);
+  document.getElementById('keyDisplay').textContent = guessKeySig(uniq);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   VOLUME / REVERB
+═══════════════════════════════════════════════════════════════ */
+function setVol(v) {
+  document.getElementById('volV').textContent = v;
+  if (vol) vol.volume.value = Tone.gainToDb(+v / 100) - 4;
+}
+function setRev(v) {
+  document.getElementById('revV').textContent = v;
+  if (reverb) reverb.wet.value = +v / 100 * 0.85;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   METRONOME
+═══════════════════════════════════════════════════════════════ */
+let metroOn = false, metroTick = null, bpm = 120, timeSig = 4, beat = 0;
+
+function toggleMetro() {
+  metroOn = !metroOn;
+  document.getElementById('metroBtn').classList.toggle('on', metroOn);
+  metroOn ? startMetro() : stopMetro();
+}
+function startMetro() {
+  clearInterval(metroTick);
+  beat = 0;
+  const ms = 60000 / bpm;
+  const click = () => {
+    const isDown = beat % timeSig === 0;
+    // Create a quick click sound
+    const ctx = Tone.context.rawContext;
+    const buf = ctx.createBuffer(1, ctx.sampleRate * 0.05, ctx.sampleRate);
+    const d   = buf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = (Math.random()*2-1) * Math.exp(-i/(d.length*0.15));
+    const src = ctx.createBufferSource();
+    const bqf = ctx.createBiquadFilter();
+    bqf.type = 'bandpass';
+    bqf.frequency.value = isDown ? 1200 : 900;
+    bqf.Q.value = 2;
+    const g = ctx.createGain();
+    g.gain.value = isDown ? 0.3 : 0.18;
+    src.buffer = buf;
+    src.connect(bqf); bqf.connect(g); g.connect(ctx.destination);
+    src.start();
+
+    // Visual beat dots
+    document.querySelectorAll('.mdot').forEach((d,i) => {
+      d.classList.toggle('beat', i === beat % timeSig);
+    });
+    beat++;
+  };
+  click();
+  metroTick = setInterval(click, ms);
+}
+function stopMetro() {
+  clearInterval(metroTick);
+  document.querySelectorAll('.mdot').forEach(d => d.classList.remove('beat'));
+}
+function setBpm(v) {
+  bpm = +v;
+  document.getElementById('bpmV').textContent = v;
+  if (metroOn) startMetro();
+}
+function setTimeSig(v) {
+  timeSig = +v;
+  if (metroOn) startMetro();
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   KEYBOARD EVENTS
+═══════════════════════════════════════════════════════════════ */
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+  if (e.code === 'Space') { e.preventDefault(); setSustain(true); return; }
+  if (e.repeat) return;
+  const k = e.key.toLowerCase();
+  const m = KEY_MAP[k];
+  if (m && !heldKeys.has(k)) {
+    heldKeys.add(k);
+    playNote(m.note, m.oct);
+  }
+});
+document.addEventListener('keyup', e => {
+  if (e.code === 'Space') { setSustain(false); return; }
+  const k = e.key.toLowerCase();
+  const m = KEY_MAP[k];
+  if (m) { heldKeys.delete(k); stopNote(m.note, m.oct); }
+});
+
+/* ═══════════════════════════════════════════════════════════════
+   BUILD VISUAL KEYBOARD  (C2 → C7, 36 white keys)
+═══════════════════════════════════════════════════════════════ */
+const WN = ['C','D','E','F','G','A','B'];
+// Black key: which white-key "gap" index it follows (0=after C, 1=after D, etc.)
+const BLACK_AFTER = [
+  {note:'C#', after:0}, {note:'D#', after:1},
+  {note:'F#', after:3}, {note:'G#', after:4}, {note:'A#', after:5}
+];
+const WK_PX  = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--wk')) || 40;
+const BK_PX  = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--bk')) || 25;
+const START_O = 2, END_O = 6;
+
+function buildKeyboard() {
+  const kb = document.getElementById('keyboard');
+  kb.innerHTML = '';
+
+  // Track pixel left positions of each white key
+  const wPos = {}; // 'C3' → left px (from 0)
+  let wi = 0;
+
+  // --- Render white keys ---
+  for (let o = START_O; o <= END_O + 1; o++) {
+    const notes = o === END_O + 1 ? ['C'] : WN;
+    for (const note of notes) {
+      const id = nid(note, o);
+      const el = document.createElement('div');
+      el.className = 'wk';
+      el.dataset.nid = id;
+      if (note === 'C' && o === 4) el.classList.add('mc'); // Middle C
+
+      const kk = N2K[id] || '';
+      el.innerHTML = `<div class="lbl">${kk ? `<span class="kb-key">${kk}</span>` : ''}<span class="note">${note}${o}</span></div>`;
+
+      el.addEventListener('mousedown',  ev => { ev.preventDefault(); playNote(note, o); });
+      el.addEventListener('mouseup',    ()  => stopNote(note, o));
+      el.addEventListener('mouseleave', ()  => stopNote(note, o));
+      el.addEventListener('touchstart', ev => { ev.preventDefault(); playNote(note, o); }, {passive:false});
+      el.addEventListener('touchend',   ()  => stopNote(note, o));
+      el.addEventListener('touchcancel',()  => stopNote(note, o));
+
+      kb.appendChild(el);
+      wPos[id] = wi * WK_PX;
+      wi++;
+    }
+  }
+
+  // --- Render black keys (absolutely positioned) ---
+  for (let o = START_O; o <= END_O; o++) {
+    const cLeft = wPos['C' + o];
+    for (const {note, after} of BLACK_AFTER) {
+      const id = nid(note, o);
+      const el = document.createElement('div');
+      el.className = 'bk';
+      el.dataset.nid = id;
+
+      const kk = N2K[id] || '';
+      el.innerHTML = `<div class="blbl">${kk ? `<span class="kb-key">${kk}</span>` : ''}<span class="note">${note.replace('#','♯')}${o}</span></div>`;
+
+      // Center the black key between the two surrounding white keys
+      const left = cLeft + (after + 1) * WK_PX - BK_PX / 2;
+      el.style.left = left + 'px';
+
+      el.addEventListener('mousedown',  ev => { ev.preventDefault(); playNote(note, o); });
+      el.addEventListener('mouseup',    ()  => stopNote(note, o));
+      el.addEventListener('mouseleave', ()  => stopNote(note, o));
+      el.addEventListener('touchstart', ev => { ev.preventDefault(); playNote(note, o); }, {passive:false});
+      el.addEventListener('touchend',   ()  => stopNote(note, o));
+      el.addEventListener('touchcancel',()  => stopNote(note, o));
+
+      kb.appendChild(el);
+    }
+  }
+
+  // Scroll to show C3 (start of keyboard shortcuts)
+  requestAnimationFrame(() => {
+    const scroll = document.getElementById('kbScroll');
+    scroll.scrollLeft = (wPos['C3'] || 0) - 20;
+  });
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   PARTICLES
+═══════════════════════════════════════════════════════════════ */
+function spawnParticle(note, oct, isBlack) {
+  const el = document.querySelector(`[data-nid="${note+oct}"]`);
+  if (!el) return;
+  const rect = el.getBoundingClientRect();
+  const col = isBlack ? '#c8a84b' : '#ffe890';
+  for (let i = 0; i < 4; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    const s = Math.random() * 5 + 3;
+    const dur = 0.4 + Math.random() * 0.4;
+    p.style.cssText = `width:${s}px;height:${s}px;left:${rect.left + Math.random()*rect.width}px;top:${rect.top + 15}px;background:${col};box-shadow:0 0 6px ${col};animation-duration:${dur}s`;
+    document.body.appendChild(p);
+    p.addEventListener('animationend', () => p.remove());
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   WAVEFORM VISUALIZER
+═══════════════════════════════════════════════════════════════ */
+function startVisualizer() {
+  const canvas = document.getElementById('viz');
+  const ctx    = canvas.getContext('2d');
+
+  function draw() {
+    requestAnimationFrame(draw);
+    canvas.width  = canvas.offsetWidth;
+    canvas.height = canvas.offsetHeight;
+    const W = canvas.width, H = canvas.height;
+
+    ctx.fillStyle = '#0d0d18';
+    ctx.fillRect(0, 0, W, H);
+
+    // Centre line
+    ctx.strokeStyle = 'rgba(30,30,48,0.9)';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(0, H/2); ctx.lineTo(W, H/2); ctx.stroke();
+
+    if (!waveform) return;
+    const data = waveform.getValue();
+    if (!data || data.length === 0) return;
+
+    const grad = ctx.createLinearGradient(0, 0, W, 0);
+    grad.addColorStop(0,   'rgba(122,96,32,0.9)');
+    grad.addColorStop(0.35,'rgba(200,168,75,1)');
+    grad.addColorStop(0.65,'rgba(200,168,75,1)');
+    grad.addColorStop(1,   'rgba(176,96,48,0.9)');
+
+    ctx.strokeStyle = grad;
+    ctx.lineWidth = 1.8;
+    ctx.shadowColor = '#c8a84b';
+    ctx.shadowBlur = 7;
+    ctx.beginPath();
+
+    const step = W / data.length;
+    for (let i = 0; i < data.length; i++) {
+      const x = i * step;
+      const y = H / 2 - data[i] * H * 0.44;
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+  }
+  draw();
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   INIT
+═══════════════════════════════════════════════════════════════ */
+buildKeyboard();
+startVisualizer();
+initAudio().catch(err => {
+  document.getElementById('loadTxt').textContent = '⚠ ' + err.message;
+});
+</script>
+</body>
+</html>

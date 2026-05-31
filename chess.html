@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chess vs AI</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+        }
+        h1 { text-align: center; color: #2c3e50; margin-bottom: 20px; }
+        .info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            padding: 15px;
+            background: #ecf0f1;
+            border-radius: 8px;
+        }
+        .player { font-weight: 600; }
+        .turn { padding: 8px 16px; background: #27ae60; color: white; border-radius: 20px; font-weight: 600; }
+        #board {
+            display: grid;
+            grid-template-columns: repeat(8, 70px);
+            grid-template-rows: repeat(8, 70px);
+            border: 3px solid #34495e;
+            margin: 0 auto;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        .square {
+            width: 70px;
+            height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 50px;
+            cursor: pointer;
+            user-select: none;
+            position: relative;
+        }
+        .light { background-color: #eeeed2; }
+        .dark { background-color: #769656; }
+        .selected { box-shadow: inset 0 0 0 3px #3498db !important; }
+        .highlight::after {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: rgba(0,150,0,0.5);
+            border-radius: 50%;
+        }
+        .capture::after {
+            content: '';
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            border: 3px solid rgba(200,0,0,0.6);
+            border-radius: 50%;
+        }
+        .last-move { background-color: rgba(255,255,0,0.4) !important; }
+        .check { background: radial-gradient(circle, #e74c3c 0%, #c0392b 100%) !important; }
+        .controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        button {
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: 600;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            color: white;
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            transition: all 0.3s;
+        }
+        button:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+        .status {
+            text-align: center;
+            margin-top: 15px;
+            font-size: 1.3em;
+            font-weight: 700;
+            padding: 10px;
+            border-radius: 8px;
+        }
+        .status.checkmate { background: #f8d7da; color: #721c24; }
+        .status.check-msg { background: #fff3cd; color: #856404; }
+        .difficulty {
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        select {
+            padding: 8px 16px;
+            border: 2px solid #bdc3c7;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+        .thinking {
+            text-align: center;
+            color: #e67e22;
+            font-weight: 600;
+            margin-top: 10px;
+            display: none;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .thinking.active { display: block; animation: pulse 1.5s infinite; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>♔ Chess vs Computer ♚</h1>
+        
+        <div class="difficulty">
+            <label>AI Difficulty:</label>
+            <select id="difficulty">
+                <option value="1">Easy (1 move ahead)</option>
+                <option value="2" selected>Medium (2 moves ahead)</option>
+                <option value="3">Hard (3 moves ahead)</option>
+            </select>
+        </div>
+
+        <div class="info">
+            <div class="player">🤖 Computer (Black)</div>
+            <div class="turn" id="turn">Your Turn</div>
+            <div class="player">👤 You (White)</div>
+        </div>
+
+        <div id="board"></div>
+
+        <div class="controls">
+            <button onclick="newGame()">New Game</button>
+            <button onclick="undoMove()" id="undo-btn">Undo Move</button>
+            <button onclick="showHint()" id="hint-btn">Show Hint</button>
+        </div>
+
+        <div class="thinking" id="thinking">Computer is thinking...</div>
+        <div class="status" id="status"></div>
+    </div>
+
+    <script>
+        const pieces = {
+            p: '♟︎', r: '♜', n: '♞', b: '♝', q: '♛', k: '♚',
+            P: '♙', R: '♖', N: '♘', B: '♗', Q: '♕', K: '♔'
+        };
+
+        const pieceColors = {
+            p: '#000', r: '#000', n: '#000', b: '#000', q: '#000', k: '#000',
+            P: '#fff', R: '#fff', N: '#fff', B: '#fff', Q: '#fff', K: '#fff'
+        };
+
+        let game = new Chess();
+        let selectedSquare = null;
+        let playerColor = 'w';
+        let lastMove = null;
+
+        function renderBoard() {
+            const boardEl = document.getElementById('board');
+            boardEl.innerHTML = '';
+            const position = game.board();
+
+            for (let row = 0; row < 8; row++) {
+                for (let col = 0; col < 8; col++) {
+                    const square = document.createElement('div');
+                    square.className = 'square ' + ((row + col) % 2 === 0 ? 'light' : 'dark');
+                    square.dataset.square = String.fromCharCode(97 + col) + (8 - row);
+
+                    if (lastMove) {
+                        if (square.dataset.square === lastMove.from || 
+                            square.dataset.square === lastMove.to) {
+                            square.classList.add('last-move');
+                        }
+                    }
+
+                    const piece = position[row][col];
+                    if (piece) {
+                        const pieceSpan = document.createElement('span');
+                        pieceSpan.textContent = pieces[piece.type];
+                        pieceSpan.style.color = piece.color === 'w' ? '#fff' : '#000';
+                        pieceSpan.style.textShadow = piece.color === 'w' ? '0 0 3px #000, 0 0 3px #000' : '0 0 3px #fff, 0 0 3px #fff';
+                        square.appendChild(pieceSpan);
+                        
+                        if (piece.type === 'k' && game.in_check() && 
+                            ((game.turn() === 'w' && piece.color === 'w') || 
+                             (game.turn() === 'b' && piece.color === 'b'))) {
+                            square.classList.add('check');
+                        }
+                    }
+
+                    square.addEventListener('click', () => handleSquareClick(square.dataset.square));
+                    boardEl.appendChild(square);
+                }
+            }
+
+            updateStatus();
+        }
+
+        function handleSquareClick(square) {
+            if (game.game_over() || game.turn() !== playerColor) return;
+
+            const piece = game.get(square);
+
+            if (selectedSquare) {
+                const move = game.move({
+                    from: selectedSquare,
+                    to: square,
+                    promotion: 'q'
+                });
+
+                if (move) {
+                    lastMove = { from: selectedSquare, to: square };
+                    selectedSquare = null;
+                    renderBoard();
+                    
+                    if (!game.game_over()) {
+                        setTimeout(makeComputerMove, 500);
+                    }
+                } else if (piece && piece.color === playerColor) {
+                    selectedSquare = square;
+                    highlightMoves(square);
+                } else {
+                    selectedSquare = null;
+                    renderBoard();
+                }
+            } else if (piece && piece.color === playerColor) {
+                selectedSquare = square;
+                highlightMoves(square);
+            }
+        }
+
+        function highlightMoves(square) {
+            renderBoard();
+            
+            const squares = document.querySelectorAll('.square');
+            squares.forEach(sq => {
+                if (sq.dataset.square === square) {
+                    sq.classList.add('selected');
+                }
+            });
+
+            const moves = game.moves({ square: square, verbose: true });
+            moves.forEach(move => {
+                squares.forEach(sq => {
+                    if (sq.dataset.square === move.to) {
+                        if (move.captured) {
+                            sq.classList.add('capture');
+                        } else {
+                            sq.classList.add('highlight');
+                        }
+                    }
+                });
+            });
+        }
+
+        function makeComputerMove() {
+            if (game.game_over()) return;
+
+            document.getElementById('thinking').classList.add('active');
+            document.getElementById('hint-btn').disabled = true;
+            document.getElementById('undo-btn').disabled = true;
+
+            setTimeout(() => {
+                const depth = parseInt(document.getElementById('difficulty').value);
+                const bestMove = getBestMove(depth);
+                
+                if (bestMove) {
+                    const move = game.move({
+                        from: bestMove.from,
+                        to: bestMove.to,
+                        promotion: 'q'
+                    });
+                    
+                    if (move) {
+                        lastMove = { from: bestMove.from, to: bestMove.to };
+                        renderBoard();
+                    }
+                }
+
+                document.getElementById('thinking').classList.remove('active');
+                document.getElementById('hint-btn').disabled = false;
+                document.getElementById('undo-btn').disabled = false;
+            }, 300);
+        }
+
+        function getBestMove(depth) {
+            const moves = game.moves({ verbose: true });
+            if (moves.length === 0) return null;
+
+            let bestMove = null;
+            let bestValue = -Infinity;
+
+            for (const move of moves) {
+                game.move(move);
+                const value = -minimax(depth - 1, -Infinity, Infinity);
+                game.undo();
+
+                if (value > bestValue) {
+                    bestValue = value;
+                    bestMove = move;
+                }
+            }
+
+            return bestMove;
+        }
+
+        function minimax(depth, alpha, beta) {
+            if (depth === 0) return evaluateBoard();
+
+            const moves = game.moves({ verbose: true });
+            
+            if (moves.length === 0) {
+                if (game.in_checkmate()) return -Infinity;
+                return 0;
+            }
+
+            let maxEval = -Infinity;
+
+            for (const move of moves) {
+                game.move(move);
+                const evalScore = -minimax(depth - 1, -beta, -alpha);
+                game.undo();
+
+                maxEval = Math.max(maxEval, evalScore);
+                alpha = Math.max(alpha, evalScore);
+                if (beta <= alpha) break;
+            }
+
+            return maxEval;
+        }
+
+        function evaluateBoard() {
+            const pieceValues = { p: 100, n: 320, b: 330, r: 500, q: 900, k: 20000 };
+            const position = game.board();
+            let total = 0;
+
+            for (let row = 0; row < 8; row++) {
+                for (let col = 0; col < 8; col++) {
+                    const piece = position[row][col];
+                    if (piece) {
+                        const value = pieceValues[piece.type];
+                        total += piece.color === 'b' ? value : -value;
+                    }
+                }
+            }
+
+            return total;
+        }
+
+        function updateStatus() {
+            const statusEl = document.getElementById('status');
+            const turnEl = document.getElementById('turn');
+            
+            if (game.in_checkmate()) {
+                statusEl.textContent = `Checkmate! ${game.turn() === 'w' ? 'Black' : 'White'} wins!`;
+                statusEl.className = 'status checkmate';
+                turnEl.textContent = 'Game Over';
+            } else if (game.in_draw()) {
+                statusEl.textContent = 'Draw!';
+                statusEl.className = 'status';
+                turnEl.textContent = 'Game Over';
+            } else if (game.in_stalemate()) {
+                statusEl.textContent = 'Stalemate!';
+                statusEl.className = 'status';
+                turnEl.textContent = 'Game Over';
+            } else if (game.in_check()) {
+                statusEl.textContent = 'Check!';
+                statusEl.className = 'status check-msg';
+                turnEl.textContent = game.turn() === 'w' ? 'Your Turn' : "Computer's Turn";
+            } else {
+                statusEl.textContent = '';
+                statusEl.className = 'status';
+                turnEl.textContent = game.turn() === 'w' ? 'Your Turn' : "Computer's Turn";
+            }
+        }
+
+        function newGame() {
+            game.reset();
+            selectedSquare = null;
+            lastMove = null;
+            renderBoard();
+        }
+
+        function undoMove() {
+            if (game.history().length < 2) return;
+            game.undo();
+            game.undo();
+            lastMove = null;
+            selectedSquare = null;
+            renderBoard();
+        }
+
+        function showHint() {
+            if (game.game_over() || game.turn() !== playerColor) return;
+            
+            const move = getBestMove(2);
+            if (move) {
+                selectedSquare = move.from;
+                highlightMoves(move.from);
+                
+                setTimeout(() => {
+                    const squares = document.querySelectorAll('.square');
+                    squares.forEach(sq => {
+                        if (sq.dataset.square === move.to) {
+                            sq.style.boxShadow = 'inset 0 0 0 3px #f39c12';
+                        }
+                    });
+                }, 100);
+            }
+        }
+
+        renderBoard();
+    </script>
+</body>
+</html>

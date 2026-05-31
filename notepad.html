@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dark Notepad IDE</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            background: #1e1e1e;
+            color: #d4d4d4;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header/Toolbar */
+        .toolbar {
+            background: #2d2d30;
+            border-bottom: 1px solid #3e3e42;
+            padding: 8px 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            min-height: 48px;
+        }
+
+        .toolbar-btn {
+            background: #3e3e42;
+            border: 1px solid #505053;
+            color: #d4d4d4;
+            padding: 6px 12px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: background 0.2s;
+            white-space: nowrap;
+        }
+
+        .toolbar-btn:hover {
+            background: #505053;
+        }
+
+        .toolbar-btn:active {
+            background: #5a5a5d;
+        }
+
+        .toolbar-divider {
+            width: 1px;
+            height: 24px;
+            background: #3e3e42;
+            margin: 0 4px;
+        }
+
+        .file-name {
+            color: #cccccc;
+            font-size: 14px;
+            margin-left: 8px;
+            flex-grow: 1;
+        }
+
+        /* Main Editor Area */
+        .editor-container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Line Numbers */
+        .line-numbers {
+            background: #1e1e1e;
+            color: #858585;
+            padding: 16px 8px;
+            text-align: right;
+            user-select: none;
+            font-size: 14px;
+            line-height: 1.6;
+            border-right: 1px solid #3e3e42;
+            overflow: hidden;
+            min-width: 50px;
+            white-space: pre;
+        }
+
+        /* Text Area */
+        .editor {
+            flex: 1;
+            background: #1e1e1e;
+            color: #d4d4d4;
+            border: none;
+            outline: none;
+            padding: 16px;
+            font-size: 14px;
+            line-height: 1.6;
+            resize: none;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            overflow-y: auto;
+            overflow-x: auto;
+            white-space: pre;
+            tab-size: 4;
+        }
+
+        .editor::-webkit-scrollbar {
+            width: 14px;
+            height: 14px;
+        }
+
+        .editor::-webkit-scrollbar-track {
+            background: #1e1e1e;
+        }
+
+        .editor::-webkit-scrollbar-thumb {
+            background: #424242;
+            border-radius: 0;
+        }
+
+        .editor::-webkit-scrollbar-thumb:hover {
+            background: #4e4e4e;
+        }
+
+        /* Status Bar */
+        .status-bar {
+            background: #007acc;
+            color: white;
+            padding: 4px 12px;
+            font-size: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            min-height: 24px;
+        }
+
+        .status-item {
+            display: flex;
+            gap: 16px;
+        }
+
+        /* Mobile Optimizations */
+        @media (max-width: 768px) {
+            .toolbar {
+                padding: 6px 8px;
+                gap: 6px;
+            }
+
+            .toolbar-btn {
+                padding: 8px 10px;
+                font-size: 12px;
+            }
+
+            .file-name {
+                display: none;
+            }
+
+            .line-numbers {
+                min-width: 40px;
+                padding: 12px 6px;
+                font-size: 12px;
+            }
+
+            .editor {
+                font-size: 13px;
+                padding: 12px;
+            }
+
+            .status-bar {
+                font-size: 11px;
+                padding: 4px 8px;
+            }
+
+            .toolbar-divider {
+                display: none;
+            }
+        }
+
+        /* Tablet Optimizations */
+        @media (min-width: 769px) and (max-width: 1024px) {
+            .editor {
+                font-size: 14px;
+            }
+
+            .toolbar-btn {
+                padding: 7px 11px;
+            }
+        }
+
+        /* File input hidden */
+        #fileInput {
+            display: none;
+        }
+
+        /* Modal for shortcuts */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: #2d2d30;
+            border: 1px solid #3e3e42;
+            border-radius: 4px;
+            padding: 24px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-content h2 {
+            color: #cccccc;
+            margin-bottom: 16px;
+        }
+
+        .shortcut-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #3e3e42;
+        }
+
+        .shortcut-key {
+            color: #4ec9b0;
+            font-weight: bold;
+        }
+
+        .close-modal {
+            background: #007acc;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 3px;
+            cursor: pointer;
+            margin-top: 16px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Toolbar -->
+    <div class="toolbar">
+        <button class="toolbar-btn" onclick="newFile()">📄 New</button>
+        <button class="toolbar-btn" onclick="openFile()">📂 Open</button>
+        <button class="toolbar-btn" onclick="saveFile()">💾 Save</button>
+        <div class="toolbar-divider"></div>
+        <button class="toolbar-btn" onclick="clearEditor()">🗑️ Clear</button>
+        <button class="toolbar-btn" onclick="copyText()">📋 Copy</button>
+        <div class="toolbar-divider"></div>
+        <button class="toolbar-btn" onclick="showShortcuts()">⌨️ Help</button>
+        <span class="file-name" id="fileName">untitled.txt</span>
+    </div>
+
+    <!-- Editor Container -->
+    <div class="editor-container">
+        <div class="line-numbers" id="lineNumbers">1</div>
+        <textarea class="editor" id="editor" placeholder="Start typing..." spellcheck="false"></textarea>
+    </div>
+
+    <!-- Status Bar -->
+    <div class="status-bar">
+        <div class="status-item">
+            <span>Line: <span id="lineCount">1</span></span>
+            <span>Chars: <span id="charCount">0</span></span>
+        </div>
+        <div class="status-item">
+            <span id="timestamp"></span>
+        </div>
+    </div>
+
+    <!-- Hidden File Input -->
+    <input type="file" id="fileInput" accept=".txt,.js,.html,.css,.json,.md,.py,.java,.cpp,.c,.xml" onchange="handleFileOpen(event)">
+
+    <!-- Shortcuts Modal -->
+    <div class="modal" id="shortcutsModal" onclick="closeModal(event)">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <h2>Keyboard Shortcuts</h2>
+            <div class="shortcut-item">
+                <span>New File</span>
+                <span class="shortcut-key">Ctrl + N</span>
+            </div>
+            <div class="shortcut-item">
+                <span>Open File</span>
+                <span class="shortcut-key">Ctrl + O</span>
+            </div>
+            <div class="shortcut-item">
+                <span>Save File</span>
+                <span class="shortcut-key">Ctrl + S</span>
+            </div>
+            <div class="shortcut-item">
+                <span>Copy All</span>
+                <span class="shortcut-key">Ctrl + Shift + C</span>
+            </div>
+            <div class="shortcut-item">
+                <span>Clear Editor</span>
+                <span class="shortcut-key">Ctrl + Shift + X</span>
+            </div>
+            <button class="close-modal" onclick="closeModal()">Close</button>
+        </div>
+    </div>
+
+    <script>
+        const editor = document.getElementById('editor');
+        const lineNumbers = document.getElementById('lineNumbers');
+        const lineCount = document.getElementById('lineCount');
+        const charCount = document.getElementById('charCount');
+        const fileName = document.getElementById('fileName');
+        const timestamp = document.getElementById('timestamp');
+        const fileInput = document.getElementById('fileInput');
+        let saveTimeout;
+
+        // Update line numbers
+        function updateLineNumbers() {
+            const lines = editor.value.split('\n').length;
+            const numbers = Array.from({length: lines}, (_, i) => i + 1).join('\n');
+            lineNumbers.textContent = numbers;
+            lineCount.textContent = lines;
+            charCount.textContent = editor.value.length;
+        }
+
+        // Sync scroll between line numbers and editor
+        editor.addEventListener('scroll', () => {
+            lineNumbers.scrollTop = editor.scrollTop;
+        });
+
+        // Update on input - combined for efficiency
+        editor.addEventListener('input', () => {
+            updateLineNumbers();
+            clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(() => {
+                localStorage.setItem('notepad-content', editor.value);
+            }, 500);
+        });
+
+        // Update timestamp
+        function updateTimestamp() {
+            const now = new Date();
+            timestamp.textContent = now.toLocaleTimeString();
+        }
+        setInterval(updateTimestamp, 1000);
+        updateTimestamp();
+
+        // New File
+        function newFile() {
+            if (editor.value && !confirm('Create new file? Unsaved changes will be lost.')) {
+                return;
+            }
+            editor.value = '';
+            fileName.textContent = 'untitled.txt';
+            updateLineNumbers();
+        }
+
+        // Open File
+        function openFile() {
+            fileInput.click();
+        }
+
+        function handleFileOpen(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    editor.value = e.target.result;
+                    fileName.textContent = file.name;
+                    updateLineNumbers();
+                };
+                reader.readAsText(file);
+            }
+        }
+
+        // Save File
+        function saveFile() {
+            const blob = new Blob([editor.value], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName.textContent || 'untitled.txt';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // Clear Editor
+        function clearEditor() {
+            if (confirm('Clear all content?')) {
+                editor.value = '';
+                updateLineNumbers();
+            }
+        }
+
+        // Copy Text
+        function copyText() {
+            navigator.clipboard.writeText(editor.value).then(() => {
+                alert('Text copied to clipboard!');
+            }).catch(() => {
+                editor.select();
+                document.execCommand('copy');
+                alert('Text copied to clipboard!');
+            });
+        }
+
+        // Show Shortcuts Modal
+        function showShortcuts() {
+            document.getElementById('shortcutsModal').style.display = 'flex';
+        }
+
+        function closeModal(event) {
+            if (!event || event.target.className === 'modal') {
+                document.getElementById('shortcutsModal').style.display = 'none';
+            }
+        }
+
+        // Keyboard Shortcuts
+        document.addEventListener('keydown', (e) => {
+            // Ctrl + S - Save
+            if (e.ctrlKey && e.key === 's') {
+                e.preventDefault();
+                saveFile();
+            }
+            // Ctrl + N - New
+            if (e.ctrlKey && e.key === 'n') {
+                e.preventDefault();
+                newFile();
+            }
+            // Ctrl + O - Open
+            if (e.ctrlKey && e.key === 'o') {
+                e.preventDefault();
+                openFile();
+            }
+            // Ctrl + Shift + C - Copy
+            if (e.ctrlKey && e.shiftKey && e.key === 'C') {
+                e.preventDefault();
+                copyText();
+            }
+            // Ctrl + Shift + X - Clear
+            if (e.ctrlKey && e.shiftKey && e.key === 'X') {
+                e.preventDefault();
+                clearEditor();
+            }
+            // Tab key support
+            if (e.key === 'Tab') {
+                e.preventDefault();
+                const start = editor.selectionStart;
+                const end = editor.selectionEnd;
+                editor.value = editor.value.substring(0, start) + '    ' + editor.value.substring(end);
+                editor.selectionStart = editor.selectionEnd = start + 4;
+                updateLineNumbers();
+            }
+        });
+
+        // Initialize
+        updateLineNumbers();
+
+        // Load from localStorage on start
+        window.addEventListener('load', () => {
+            const saved = localStorage.getItem('notepad-content');
+            if (saved) {
+                editor.value = saved;
+                updateLineNumbers();
+            }
+        });
+    </script>
+</body>
+</html>

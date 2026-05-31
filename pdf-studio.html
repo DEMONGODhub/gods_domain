@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>PDF STUDIO</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="https://unpkg.com/pdf-lib/dist/pdf-lib.min.js"></script>
+  <style>
+    :root {
+      --bg: #1c1c1c;
+      --surface: #222222;
+      --card: #2a2a2a;
+      --border: #333333;
+      --yellow: #f5c518;
+      --yellow-dim: #c9a010;
+      --gray: #888888;
+      --gray-light: #bbbbbb;
+      --white: #eeeeee;
+      --black: #101010;
+      --radius: 4px;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; overflow: hidden; }
+    body {
+      background: var(--bg);
+      color: var(--white);
+      font-family: 'DM Sans', sans-serif;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ─── HEADER ─── */
+    header {
+      background: var(--black);
+      border-bottom: 2px solid var(--yellow);
+      padding: 0 24px;
+      height: 50px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+      z-index: 10;
+    }
+    .logo {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.55rem;
+      letter-spacing: 6px;
+      color: var(--yellow);
+    }
+    .logo span { color: var(--white); }
+    .header-sub {
+      font-size: 0.62rem;
+      letter-spacing: 2.5px;
+      text-transform: uppercase;
+      color: var(--gray);
+    }
+
+    /* ─── LAYOUT ─── */
+    .app-body {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    /* ─── SIDEBAR ─── */
+    .sidebar {
+      width: 230px;
+      min-width: 230px;
+      background: var(--black);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+    }
+    .upload-btn {
+      margin: 12px 12px 8px;
+      background: var(--yellow);
+      color: var(--black);
+      border: none;
+      padding: 9px 0;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1rem;
+      letter-spacing: 3px;
+      cursor: pointer;
+      border-radius: var(--radius);
+      width: calc(100% - 24px);
+    }
+    .upload-btn:hover { background: var(--yellow-dim); }
+    .tree-section-label {
+      font-size: 0.58rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--gray);
+      padding: 8px 14px 5px;
+      border-top: 1px solid var(--border);
+    }
+    .file-tree {
+      flex: 1;
+      overflow-y: auto;
+    }
+    .file-tree::-webkit-scrollbar { width: 3px; }
+    .file-tree::-webkit-scrollbar-thumb { background: var(--border); }
+    .tree-item {
+      padding: 9px 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      border-left: 2px solid transparent;
+      transition: background 0.15s;
+    }
+    .tree-item:hover { background: #1e1e1e; }
+    .tree-item.active {
+      border-left-color: var(--yellow);
+      background: #1e1e1e;
+    }
+    .tree-icon { font-size: 0.85rem; flex-shrink: 0; padding-top: 1px; }
+    .tree-text { min-width: 0; }
+    .tree-name {
+      font-size: 0.75rem;
+      color: var(--white);
+      line-height: 1.3;
+      word-break: break-all;
+    }
+    .tree-meta {
+      font-size: 0.6rem;
+      color: var(--gray);
+      margin-top: 2px;
+      letter-spacing: 0.5px;
+    }
+    .tree-empty {
+      padding: 24px 14px;
+      font-size: 0.7rem;
+      color: var(--gray);
+      letter-spacing: 0.5px;
+      text-align: center;
+      line-height: 1.8;
+    }
+    input[type="file"] { display: none; }
+
+    /* ─── MAIN ─── */
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .main-toolbar {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 7px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+      min-height: 38px;
+    }
+    .main-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 0.95rem;
+      letter-spacing: 3px;
+      color: var(--yellow);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 60%;
+    }
+    .toolbar-btns {
+      display: flex;
+      gap: 6px;
+    }
+    .tbtn {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--gray);
+      padding: 3px 10px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.65rem;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      cursor: pointer;
+      border-radius: var(--radius);
+    }
+    .tbtn:hover { border-color: var(--yellow); color: var(--yellow); }
+
+    /* ─── PAGES AREA ─── */
+    .pages-area {
+      flex: 1;
+      overflow-y: auto;
+      padding: 18px;
+    }
+    .pages-area::-webkit-scrollbar { width: 5px; }
+    .pages-area::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    .pages-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 12px;
+    }
+
+    .page-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      cursor: pointer;
+      position: relative;
+      transition: border-color 0.15s;
+    }
+    .page-card:hover { border-color: #555; }
+    .page-card.included { border-color: var(--yellow); }
+    .page-card.excluded { opacity: 0.3; border-color: var(--border); }
+
+    .page-thumb {
+      position: relative;
+      background: #181818;
+      line-height: 0;
+    }
+    .page-thumb img {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+    .page-x-overlay {
+      display: none;
+      position: absolute;
+      inset: 0;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0,0,0,0.55);
+      font-size: 2rem;
+      color: rgba(255,255,255,0.35);
+    }
+    .page-card.excluded .page-x-overlay { display: flex; }
+
+    .page-footer {
+      padding: 5px 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-top: 1px solid var(--border);
+    }
+    .page-num {
+      font-size: 0.6rem;
+      color: var(--gray);
+      letter-spacing: 1px;
+    }
+    .page-chk {
+      width: 13px; height: 13px;
+      accent-color: var(--yellow);
+      cursor: pointer;
+    }
+
+    /* ─── EMPTY / LOADING STATES ─── */
+    .center-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      gap: 10px;
+      color: var(--gray);
+      text-align: center;
+      padding: 20px;
+    }
+    .center-icon { font-size: 2.8rem; opacity: 0.25; }
+    .center-state h3 {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.2rem;
+      letter-spacing: 4px;
+      color: #333;
+    }
+    .center-state p { font-size: 0.72rem; letter-spacing: 0.5px; }
+    .spinner {
+      width: 30px; height: 30px;
+      border: 3px solid var(--border);
+      border-top-color: var(--yellow);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spin-label { font-size: 0.72rem; letter-spacing: 2px; text-transform: uppercase; }
+
+    /* ─── COMPRESS BUTTON ─── */
+    #compressBtn {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: var(--yellow);
+      color: var(--black);
+      border: none;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.05rem;
+      letter-spacing: 4px;
+      padding: 11px 26px;
+      cursor: pointer;
+      border-radius: var(--radius);
+      z-index: 50;
+    }
+    #compressBtn:hover:not(:disabled) { background: var(--yellow-dim); }
+    #compressBtn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+    /* ─── MODAL ─── */
+    .modal-overlay {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.93);
+      z-index: 999;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal-box {
+      background: var(--surface);
+      border: 1px solid var(--yellow);
+      border-radius: var(--radius);
+      width: 340px;
+      overflow: hidden;
+    }
+    .modal-head {
+      background: var(--black);
+      border-bottom: 1px solid var(--border);
+      padding: 13px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .modal-head-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.05rem;
+      letter-spacing: 4px;
+      color: var(--yellow);
+    }
+    .modal-x {
+      background: none; border: none;
+      color: var(--gray);
+      font-size: 1rem;
+      cursor: pointer; line-height: 1;
+    }
+    .modal-x:hover { color: var(--yellow); }
+    .modal-body {
+      padding: 26px 22px 22px;
+      text-align: center;
+    }
+    .modal-checkmark {
+      font-size: 2.8rem;
+      margin-bottom: 10px;
+      display: block;
+    }
+    .modal-main-msg {
+      font-size: 0.8rem;
+      color: var(--gray-light);
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+    }
+    .modal-sub-msg {
+      font-size: 0.68rem;
+      color: var(--gray);
+      margin-bottom: 22px;
+      letter-spacing: 0.5px;
+    }
+    .modal-actions { display: flex; gap: 8px; justify-content: center; }
+    .btn-dl {
+      background: var(--yellow);
+      color: var(--black);
+      border: none;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 0.9rem;
+      letter-spacing: 3px;
+      padding: 9px 22px;
+      cursor: pointer;
+      border-radius: var(--radius);
+    }
+    .btn-dl:hover { background: var(--yellow-dim); }
+    .btn-close-modal {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--gray);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.72rem;
+      letter-spacing: 1px;
+      padding: 9px 16px;
+      cursor: pointer;
+      border-radius: var(--radius);
+    }
+    .btn-close-modal:hover { border-color: var(--gray-light); color: var(--white); }
+
+    /* ─── STATUS BAR ─── */
+    .status-bar {
+      background: var(--black);
+      border-top: 1px solid var(--border);
+      padding: 5px 18px;
+      font-size: 0.6rem;
+      color: var(--gray);
+      letter-spacing: 1px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .sdot {
+      display: inline-block;
+      width: 5px; height: 5px;
+      background: var(--yellow);
+      border-radius: 50%;
+      margin-right: 6px;
+      vertical-align: middle;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">PDF<span>.</span>STUDIO</div>
+  <div class="header-sub">Extract · Select · Merge · Export</div>
+</header>
+
+<div class="app-body">
+
+  <!-- ─── SIDEBAR ─── -->
+  <aside class="sidebar">
+    <button class="upload-btn" onclick="document.getElementById('pdfInput').click()">＋  UPLOAD PDF</button>
+    <input type="file" id="pdfInput" accept=".pdf" multiple onchange="handleUpload(this)"/>
+    <div class="tree-section-label">DOCUMENTS</div>
+    <div class="file-tree" id="fileTree">
+      <div class="tree-empty">No PDFs uploaded yet.<br/>Click UPLOAD PDF to begin.</div>
+    </div>
+  </aside>
+
+  <!-- ─── MAIN PANEL ─── -->
+  <main class="main">
+    <div class="main-toolbar">
+      <div class="main-title" id="mainTitle">SELECT A FILE</div>
+      <div class="toolbar-btns" id="toolbarBtns" style="display:none">
+        <button class="tbtn" onclick="selectAll()">SELECT ALL</button>
+        <button class="tbtn" onclick="deselectAll()">DESELECT ALL</button>
+      </div>
+    </div>
+    <div class="pages-area" id="pagesArea">
+      <div class="center-state">
+        <div class="center-icon">📄</div>
+        <h3>NO FILE SELECTED</h3>
+        <p>Upload a PDF and click its name in the sidebar to view its pages.</p>
+      </div>
+    </div>
+  </main>
+
+</div>
+
+<!-- STATUS BAR -->
+<div class="status-bar">
+  <span><span class="sdot"></span><span id="statusTxt">Ready · Upload a PDF to begin</span></span>
+  <span id="statusRight"></span>
+</div>
+
+<!-- MERGE & EXPORT BUTTON -->
+<button id="compressBtn" onclick="doExport()" disabled>MERGE &amp; EXPORT</button>
+
+<!-- EXPORT COMPLETE MODAL -->
+<div class="modal-overlay" id="exportModal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <span class="modal-head-title">EXPORT COMPLETE</span>
+      <button class="modal-x" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <span class="modal-checkmark">✅</span>
+      <div class="modal-main-msg" id="modalMsg">Your PDF has been compiled successfully.</div>
+      <div class="modal-sub-msg" id="modalSub">Ready to download</div>
+      <div class="modal-actions">
+        <button class="btn-dl" onclick="downloadPdf()">⬇ DOWNLOAD PDF</button>
+        <button class="btn-close-modal" onclick="closeModal()">CLOSE</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  /* ── PDF.js worker ── */
+  pdfjsLib.GlobalWorkerOptions.workerSrc =
+    'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+  /* ── State ── */
+  const state = { files: [], activeId: null, outputBlob: null };
+  let uid = 0;
+
+  /* ── Upload handler ── */
+  async function handleUpload(input) {
+    const picked = Array.from(input.files);
+    for (const file of picked) {
+      const buf = await file.arrayBuffer();
+      const entry = { id: ++uid, name: file.name, buf, pages: [], pageCount: 0 };
+      state.files.push(entry);
+      addTreeItem(entry);
+      setStatus(`Loading "${file.name}"...`);
+      await renderPdfToImages(entry);
+      updateStats();
+    }
+    input.value = '';
+    refreshCompressBtn();
+  }
+
+  /* ── Render PDF pages to data-URLs ── */
+  async function renderPdfToImages(entry) {
+    try {
+      const pdf = await pdfjsLib.getDocument({ data: entry.buf.slice(0) }).promise;
+      entry.pageCount = pdf.numPages;
+      entry.pages = [];
+      for (let n = 1; n <= pdf.numPages; n++) {
+        const page = await pdf.getPage(n);
+        const vp = page.getViewport({ scale: 1.4 });
+        const canvas = document.createElement('canvas');
+        canvas.width = vp.width;
+        canvas.height = vp.height;
+        await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
+        entry.pages.push({ dataUrl: canvas.toDataURL('image/jpeg', 0.82), included: true });
+      }
+      updateTreeMeta(entry);
+      if (state.files.length === 1 && state.activeId === null) {
+        selectFile(entry.id);
+      }
+    } catch (err) {
+      console.error(err);
+      setStatus(`Error loading "${entry.name}"`);
+    }
+  }
+
+  /* ── Tree rendering ── */
+  function addTreeItem(entry) {
+    const tree = document.getElementById('fileTree');
+    const empty = tree.querySelector('.tree-empty');
+    if (empty) empty.remove();
+
+    const div = document.createElement('div');
+    div.className = 'tree-item';
+    div.id = `ti-${entry.id}`;
+    div.onclick = () => selectFile(entry.id);
+    div.innerHTML = `
+      <span class="tree-icon">📄</span>
+      <div class="tree-text">
+        <div class="tree-name">${escHtml(entry.name)}</div>
+        <div class="tree-meta" id="tm-${entry.id}">Loading…</div>
+      </div>`;
+    tree.appendChild(div);
+  }
+
+  function updateTreeMeta(entry) {
+    const el = document.getElementById(`tm-${entry.id}`);
+    if (el) el.textContent = `${entry.pageCount} page${entry.pageCount !== 1 ? 's' : ''}`;
+  }
+
+  /* ── Select active file ── */
+  function selectFile(id) {
+    state.activeId = id;
+    document.querySelectorAll('.tree-item').forEach(el => el.classList.remove('active'));
+    const ti = document.getElementById(`ti-${id}`);
+    if (ti) ti.classList.add('active');
+
+    const entry = state.files.find(f => f.id === id);
+    if (!entry) return;
+
+    const label = entry.name.replace(/\.pdf$/i, '');
+    document.getElementById('mainTitle').textContent = label.toUpperCase();
+    document.getElementById('toolbarBtns').style.display = 'flex';
+    drawPages(entry);
+  }
+
+  /* ── Draw page thumbnails ── */
+  function drawPages(entry) {
+    const area = document.getElementById('pagesArea');
+    if (!entry.pages.length) {
+      area.innerHTML = `<div class="center-state"><div class="spinner"></div><div class="spin-label">Rendering…</div></div>`;
+      return;
+    }
+    const grid = document.createElement('div');
+    grid.className = 'pages-grid';
+
+    entry.pages.forEach((pg, i) => {
+      const card = document.createElement('div');
+      card.className = 'page-card ' + (pg.included ? 'included' : 'excluded');
+      card.id = `pc-${entry.id}-${i}`;
+
+      card.innerHTML = `
+        <div class="page-thumb">
+          <img src="${pg.dataUrl}" alt="Page ${i+1}" loading="lazy"/>
+          <div class="page-x-overlay">✕</div>
+        </div>
+        <div class="page-footer">
+          <span class="page-num">PG ${i+1}</span>
+          <input type="checkbox" class="page-chk" id="chk-${entry.id}-${i}"
+            ${pg.included ? 'checked' : ''} onchange="togglePage(${entry.id},${i},this.checked)"/>
+        </div>`;
+
+      card.onclick = (e) => {
+        if (e.target.classList.contains('page-chk')) return;
+        const chk = document.getElementById(`chk-${entry.id}-${i}`);
+        chk.checked = !chk.checked;
+        togglePage(entry.id, i, chk.checked);
+      };
+
+      grid.appendChild(card);
+    });
+
+    area.innerHTML = '';
+    area.appendChild(grid);
+  }
+
+  /* ── Toggle page inclusion ── */
+  function togglePage(fileId, idx, included) {
+    const entry = state.files.find(f => f.id === fileId);
+    if (!entry) return;
+    entry.pages[idx].included = included;
+    const card = document.getElementById(`pc-${fileId}-${idx}`);
+    if (card) {
+      card.classList.toggle('included', included);
+      card.classList.toggle('excluded', !included);
+    }
+    refreshCompressBtn();
+    updateStats();
+  }
+
+  function selectAll() {
+    const entry = state.files.find(f => f.id === state.activeId);
+    if (!entry) return;
+    entry.pages.forEach((pg, i) => {
+      pg.included = true;
+      const chk = document.getElementById(`chk-${entry.id}-${i}`);
+      if (chk) chk.checked = true;
+      const card = document.getElementById(`pc-${entry.id}-${i}`);
+      if (card) { card.classList.add('included'); card.classList.remove('excluded'); }
+    });
+    refreshCompressBtn(); updateStats();
+  }
+
+  function deselectAll() {
+    const entry = state.files.find(f => f.id === state.activeId);
+    if (!entry) return;
+    entry.pages.forEach((pg, i) => {
+      pg.included = false;
+      const chk = document.getElementById(`chk-${entry.id}-${i}`);
+      if (chk) chk.checked = false;
+      const card = document.getElementById(`pc-${entry.id}-${i}`);
+      if (card) { card.classList.remove('included'); card.classList.add('excluded'); }
+    });
+    refreshCompressBtn(); updateStats();
+  }
+
+  /* ── Export (merge selected pages) ── */
+  async function doExport() {
+    const btn = document.getElementById('compressBtn');
+    btn.disabled = true;
+    btn.textContent = 'WORKING…';
+    setStatus('Building PDF…');
+
+    try {
+      const { PDFDocument } = PDFLib;
+      const out = await PDFDocument.create();
+      let total = 0;
+
+      for (const entry of state.files) {
+        const indices = entry.pages.map((p, i) => p.included ? i : -1).filter(i => i >= 0);
+        if (!indices.length) continue;
+        const src = await PDFDocument.load(entry.buf);
+        const copied = await out.copyPages(src, indices);
+        copied.forEach(p => out.addPage(p));
+        total += copied.length;
+      }
+
+      const bytes = await out.save();
+      state.outputBlob = new Blob([bytes], { type: 'application/pdf' });
+
+      document.getElementById('modalMsg').textContent =
+        `${total} page${total !== 1 ? 's' : ''} merged from ${state.files.length} document${state.files.length !== 1 ? 's' : ''}.`;
+      document.getElementById('modalSub').textContent = 'Your PDF is ready to download.';
+      document.getElementById('exportModal').classList.add('open');
+      setStatus(`Export complete · ${total} pages`);
+    } catch (err) {
+      console.error(err);
+      setStatus('Export failed — see console for details');
+      alert('Export failed: ' + err.message);
+    }
+
+    btn.textContent = 'MERGE & EXPORT';
+    refreshCompressBtn();
+  }
+
+  /* ── Download ── */
+  function downloadPdf() {
+    if (!state.outputBlob) return;
+    const url = URL.createObjectURL(state.outputBlob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'merged-output.pdf';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  function closeModal() {
+    document.getElementById('exportModal').classList.remove('open');
+  }
+  document.getElementById('exportModal').addEventListener('click', e => {
+    if (e.target === document.getElementById('exportModal')) closeModal();
+  });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+  /* ── Helpers ── */
+  function countSelected() {
+    return state.files.reduce((s, f) => s + f.pages.filter(p => p.included).length, 0);
+  }
+  function refreshCompressBtn() {
+    document.getElementById('compressBtn').disabled = countSelected() === 0;
+  }
+  function updateStats() {
+    const docs = state.files.length;
+    const total = state.files.reduce((s, f) => s + f.pageCount, 0);
+    const sel = countSelected();
+    if (!docs) { setStatus('Ready · Upload a PDF to begin'); return; }
+    setStatus(`${docs} doc${docs !== 1 ? 's' : ''} · ${total} total pages · ${sel} selected`);
+    document.getElementById('statusRight').textContent =
+      sel > 0 ? `${sel} pages in export` : 'No pages selected';
+  }
+  function setStatus(msg) { document.getElementById('statusTxt').textContent = msg; }
+  function escHtml(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+</script>
+</body>
+</html>

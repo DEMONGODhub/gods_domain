@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Decimal to Fraction Calculator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .calculator {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 400px;
+            width: 100%;
+        }
+
+        h1 {
+            text-align: center;
+            color: #667eea;
+            margin-bottom: 25px;
+            font-size: 24px;
+        }
+
+        .display {
+            background: #f7f7f7;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            min-height: 60px;
+            font-size: 28px;
+            text-align: right;
+            word-wrap: break-word;
+            color: #333;
+        }
+
+        .buttons {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        button {
+            padding: 20px;
+            font-size: 18px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .num-btn, .decimal-btn {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .num-btn:hover, .decimal-btn:hover {
+            background: #e0e0e0;
+        }
+
+        .operator-btn {
+            background: #667eea;
+            color: white;
+        }
+
+        .operator-btn:hover {
+            background: #5568d3;
+        }
+
+        .equals-btn {
+            background: #764ba2;
+            color: white;
+            grid-column: span 2;
+        }
+
+        .equals-btn:hover {
+            background: #653a8a;
+        }
+
+        .clear-btn {
+            background: #ff6b6b;
+            color: white;
+            grid-column: span 2;
+        }
+
+        .clear-btn:hover {
+            background: #ee5a52;
+        }
+
+        .convert-btn {
+            background: #51cf66;
+            color: white;
+            width: 100%;
+            padding: 15px;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+
+        .convert-btn:hover {
+            background: #40c057;
+        }
+
+        .result {
+            background: #e7f5ff;
+            border: 2px solid #339af0;
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 15px;
+            text-align: center;
+            font-size: 20px;
+            color: #1971c2;
+            min-height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="calculator">
+        <h1>📱 Calculator</h1>
+        <div class="display" id="display">0</div>
+        
+        <div class="buttons">
+            <button class="clear-btn" onclick="clearDisplay()">C</button>
+            <button class="operator-btn" onclick="appendOperator('/')">/</button>
+            <button class="operator-btn" onclick="appendOperator('*')">×</button>
+            
+            <button class="num-btn" onclick="appendNumber('7')">7</button>
+            <button class="num-btn" onclick="appendNumber('8')">8</button>
+            <button class="num-btn" onclick="appendNumber('9')">9</button>
+            <button class="operator-btn" onclick="appendOperator('-')">-</button>
+            
+            <button class="num-btn" onclick="appendNumber('4')">4</button>
+            <button class="num-btn" onclick="appendNumber('5')">5</button>
+            <button class="num-btn" onclick="appendNumber('6')">6</button>
+            <button class="operator-btn" onclick="appendOperator('+')">+</button>
+            
+            <button class="num-btn" onclick="appendNumber('1')">1</button>
+            <button class="num-btn" onclick="appendNumber('2')">2</button>
+            <button class="num-btn" onclick="appendNumber('3')">3</button>
+            <button class="equals-btn" onclick="calculate()">=</button>
+            
+            <button class="num-btn" onclick="appendNumber('0')" style="grid-column: span 2;">0</button>
+            <button class="decimal-btn" onclick="appendNumber('.')">.</button>
+        </div>
+        
+        <button class="convert-btn" onclick="convertToFraction()">🔄 Convert to Fraction</button>
+        
+        <div class="result" id="result"></div>
+    </div>
+
+    <script>
+        let currentDisplay = '0';
+        let calculatedResult = null;
+
+        function updateDisplay() {
+            document.getElementById('display').textContent = currentDisplay;
+        }
+
+        function appendNumber(num) {
+            if (currentDisplay === '0' || calculatedResult !== null) {
+                currentDisplay = num;
+                calculatedResult = null;
+            } else {
+                currentDisplay += num;
+            }
+            updateDisplay();
+        }
+
+        function appendOperator(op) {
+            calculatedResult = null;
+            currentDisplay += ' ' + op + ' ';
+            updateDisplay();
+        }
+
+        function clearDisplay() {
+            currentDisplay = '0';
+            calculatedResult = null;
+            document.getElementById('result').textContent = '';
+            updateDisplay();
+        }
+
+        function calculate() {
+            try {
+                let expression = currentDisplay.replace(/×/g, '*');
+                calculatedResult = eval(expression);
+                currentDisplay = calculatedResult.toString();
+                updateDisplay();
+            } catch (error) {
+                currentDisplay = 'Error';
+                updateDisplay();
+            }
+        }
+
+        function gcd(a, b) {
+            a = Math.abs(a);
+            b = Math.abs(b);
+            while (b !== 0) {
+                let temp = b;
+                b = a % b;
+                a = temp;
+            }
+            return a;
+        }
+
+        function convertToFraction() {
+            let value = calculatedResult !== null ? calculatedResult : parseFloat(currentDisplay);
+            
+            if (isNaN(value)) {
+                document.getElementById('result').textContent = 'Please calculate first!';
+                return;
+            }
+
+            const tolerance = 1e-10;
+            const isNegative = value < 0;
+            value = Math.abs(value);
+
+            let numerator = value;
+            let denominator = 1;
+
+            while (Math.abs(numerator - Math.round(numerator)) > tolerance) {
+                numerator *= 10;
+                denominator *= 10;
+            }
+
+            numerator = Math.round(numerator);
+            const divisor = gcd(numerator, denominator);
+            numerator /= divisor;
+            denominator /= divisor;
+
+            if (isNegative) numerator = -numerator;
+
+            const resultDiv = document.getElementById('result');
+            if (denominator === 1) {
+                resultDiv.textContent = `Fraction: ${numerator}/1 = ${numerator}`;
+            } else {
+                resultDiv.textContent = `Fraction: ${numerator}/${denominator}`;
+            }
+        }
+    </script>
+</body>
+</html>

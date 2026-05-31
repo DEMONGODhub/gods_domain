@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>IndiInfo – Business Ideas & More</title>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;600;700;800&family=Mukta:wght@300;400;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --orange:       #FF6B00;
+    --orange-dark:  #CC5500;
+    --orange-light: #FF8C38;
+    --orange-glow:  rgba(255, 107, 0, 0.25);
+    --black:        #0D0D0D;
+    --black-card:   #161616;
+    --black-border: #2A2A2A;
+    --black-mid:    #222222;
+    --text-main:    #F5F5F5;
+    --text-muted:   #888888;
+    --text-dim:     #BBBBBB;
+    --radius:       16px;
+    --card-shadow:  0 4px 24px rgba(0,0,0,0.5);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Mukta', sans-serif;
+    background: var(--black);
+    color: var(--text-main);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── HEADER ─────────────────────────────── */
+  header {
+    background: #111111;
+    border-bottom: 2px solid var(--orange);
+    padding: 0 24px;
+    position: sticky; top: 0; z-index: 100;
+    box-shadow: 0 4px 30px rgba(255, 107, 0, 0.2);
+  }
+  .header-inner {
+    max-width: 1300px; margin: auto;
+    display: flex; align-items: center; justify-content: space-between;
+    height: 68px; gap: 16px;
+  }
+  .logo {
+    display: flex; align-items: center; gap: 10px;
+    text-decoration: none; flex-shrink: 0;
+  }
+  .logo-icon {
+    width: 42px; height: 42px;
+    background: var(--orange);
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+    box-shadow: 0 0 18px rgba(255,107,0,0.55);
+  }
+  .logo-text {
+    font-family: 'Baloo 2', cursive;
+    font-weight: 800; font-size: 28px;
+    color: var(--text-main);
+    letter-spacing: -0.5px;
+  }
+  .logo-text span { color: var(--orange); }
+
+  .header-search {
+    flex: 1; max-width: 520px;
+    display: flex; align-items: center;
+    background: var(--black-mid);
+    border: 1.5px solid var(--black-border);
+    border-radius: 50px;
+    padding: 8px 18px; gap: 10px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .header-search:focus-within {
+    border-color: var(--orange);
+    box-shadow: 0 0 0 3px rgba(255,107,0,0.12);
+  }
+  .header-search input {
+    flex: 1; background: none; border: none; outline: none;
+    color: var(--text-main); font-family: 'Mukta', sans-serif;
+    font-size: 15px;
+  }
+  .header-search input::placeholder { color: var(--text-muted); }
+  .header-search button {
+    background: none; border: none; cursor: pointer;
+    color: var(--orange); font-size: 18px;
+    transition: transform 0.15s;
+  }
+  .header-search button:hover { transform: scale(1.2); }
+
+  .live-badge {
+    display: flex; align-items: center; gap: 6px;
+    padding: 6px 14px; border-radius: 50px;
+    background: rgba(255,107,0,0.12);
+    border: 1px solid rgba(255,107,0,0.35);
+    font-size: 12px; font-weight: 700; color: var(--orange);
+    white-space: nowrap; letter-spacing: 0.5px;
+    font-family: 'Baloo 2', cursive;
+  }
+  .live-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--orange);
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50%       { opacity: 0.4; transform: scale(0.6); }
+  }
+
+  /* ── HERO ─────────────────────────────────── */
+  .hero {
+    position: relative; overflow: hidden;
+    padding: 52px 24px 40px;
+    text-align: center;
+    background: radial-gradient(ellipse at top, #1f0e00 0%, var(--black) 70%);
+    border-bottom: 1px solid var(--black-border);
+  }
+  .hero::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23FF6B00' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    pointer-events: none;
+  }
+  .hero-tag {
+    display: inline-block;
+    background: rgba(255,107,0,0.15);
+    border: 1px solid rgba(255,107,0,0.4);
+    color: var(--orange); font-size: 12px; font-weight: 700;
+    font-family: 'Baloo 2', cursive; letter-spacing: 1px;
+    padding: 4px 14px; border-radius: 50px; margin-bottom: 18px;
+    text-transform: uppercase;
+  }
+  .hero h1 {
+    font-family: 'Baloo 2', cursive; font-weight: 800;
+    font-size: clamp(30px, 5vw, 52px);
+    line-height: 1.1; margin-bottom: 14px;
+    position: relative;
+  }
+  .hero h1 em {
+    font-style: normal;
+    background: linear-gradient(90deg, var(--orange), #ffaa55);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .hero p {
+    color: var(--text-muted); font-size: 16px;
+    max-width: 560px; margin: 0 auto 30px; line-height: 1.6;
+  }
+
+  /* Language Toggle */
+  .lang-toggle {
+    display: inline-flex;
+    background: var(--black-mid);
+    border: 1.5px solid var(--black-border);
+    border-radius: 50px; padding: 4px; gap: 4px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+  }
+  .lang-btn {
+    padding: 9px 24px; border-radius: 50px; border: none;
+    font-family: 'Baloo 2', cursive; font-size: 15px; font-weight: 700;
+    cursor: pointer; transition: all 0.22s;
+    background: none; color: var(--text-muted);
+  }
+  .lang-btn.active {
+    background: linear-gradient(135deg, var(--orange), var(--orange-light));
+    color: #fff;
+    box-shadow: 0 3px 14px rgba(255,107,0,0.45);
+  }
+  .lang-btn:not(.active):hover { color: var(--orange); }
+
+  /* ── CATEGORIES ──────────────────────────── */
+  .categories-wrap {
+    max-width: 1300px; margin: 32px auto 0;
+    padding: 0 24px;
+  }
+  .section-label {
+    font-family: 'Baloo 2', cursive; font-weight: 700;
+    font-size: 12px; text-transform: uppercase;
+    letter-spacing: 2px; color: var(--orange);
+    margin-bottom: 14px;
+  }
+  .categories-scroll {
+    display: flex; gap: 10px; overflow-x: auto;
+    padding-bottom: 6px; scrollbar-width: none;
+  }
+  .categories-scroll::-webkit-scrollbar { display: none; }
+  .cat-card {
+    flex-shrink: 0;
+    background: var(--black-card);
+    border: 1.5px solid var(--black-border);
+    border-radius: 14px; padding: 14px 18px;
+    cursor: pointer; transition: all 0.22s;
+    min-width: 130px; text-align: center;
+  }
+  .cat-card:hover {
+    border-color: var(--orange);
+    background: #1e1100;
+    transform: translateY(-2px);
+  }
+  .cat-card.active {
+    border-color: var(--orange);
+    background: #1e1100;
+    box-shadow: 0 0 20px rgba(255,107,0,0.2);
+  }
+  .cat-card .cat-icon { font-size: 26px; margin-bottom: 6px; }
+  .cat-card .cat-name {
+    font-family: 'Mukta', sans-serif; font-weight: 700;
+    font-size: 12px; color: var(--text-dim); line-height: 1.3;
+  }
+  .cat-card.active .cat-name { color: var(--orange); }
+
+  /* ── MAIN ────────────────────────────────── */
+  .main-wrap {
+    max-width: 1300px; margin: 32px auto;
+    padding: 0 24px;
+  }
+  .results-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 22px; flex-wrap: wrap; gap: 12px;
+  }
+  .results-title {
+    font-family: 'Baloo 2', cursive; font-weight: 800;
+    font-size: 22px; color: var(--text-main);
+  }
+  .results-count {
+    font-size: 13px; color: var(--text-muted); font-weight: 600;
+    margin-top: 2px;
+  }
+  .sort-select {
+    padding: 9px 16px;
+    background: var(--black-mid); color: var(--text-dim);
+    border: 1.5px solid var(--black-border);
+    border-radius: 50px; font-family: 'Mukta', sans-serif;
+    font-size: 14px; cursor: pointer; outline: none;
+    transition: border-color 0.2s;
+  }
+  .sort-select:focus { border-color: var(--orange); }
+  .sort-select option { background: #1a1a1a; }
+
+  /* ── VIDEO GRID ──────────────────────────── */
+  .video-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+    gap: 20px;
+  }
+  .video-card {
+    background: var(--black-card);
+    border: 1.5px solid var(--black-border);
+    border-radius: var(--radius); overflow: hidden;
+    cursor: pointer; transition: all 0.22s;
+    box-shadow: var(--card-shadow);
+  }
+  .video-card:hover {
+    border-color: var(--orange);
+    transform: translateY(-5px);
+    box-shadow: 0 12px 40px rgba(255,107,0,0.15);
+  }
+  .thumb-wrap {
+    position: relative; aspect-ratio: 16/9; overflow: hidden;
+  }
+  .thumb-wrap img {
+    width: 100%; height: 100%; object-fit: cover;
+    transition: transform 0.3s;
+  }
+  .video-card:hover .thumb-wrap img { transform: scale(1.06); }
+
+  .play-overlay {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(0,0,0,0); transition: background 0.2s;
+  }
+  .video-card:hover .play-overlay { background: rgba(0,0,0,0.4); }
+  .play-btn {
+    width: 54px; height: 54px; border-radius: 50%;
+    background: var(--orange);
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; transform: scale(0.6);
+    transition: all 0.22s;
+    box-shadow: 0 0 30px rgba(255,107,0,0.6);
+  }
+  .video-card:hover .play-btn { opacity: 1; transform: scale(1); }
+  .play-btn svg { width: 22px; height: 22px; fill: white; margin-left: 3px; }
+
+  .lang-badge {
+    position: absolute; top: 10px; right: 10px;
+    padding: 3px 10px; border-radius: 50px;
+    font-size: 11px; font-weight: 700;
+    font-family: 'Baloo 2', cursive; letter-spacing: 0.5px;
+  }
+  .lang-badge.hi { background: var(--orange); color: white; }
+  .lang-badge.en { background: rgba(0,0,0,0.75); color: white; border: 1px solid #444; }
+
+  .video-info { padding: 14px 16px 16px; }
+  .channel-row {
+    display: flex; align-items: center; gap: 8px; margin-bottom: 8px;
+  }
+  .channel-avatar {
+    width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
+    background: linear-gradient(135deg, var(--orange-dark), var(--orange));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 700; color: white;
+  }
+  .channel-name {
+    font-size: 12px; font-weight: 700; color: var(--orange);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .video-title {
+    font-family: 'Mukta', sans-serif; font-weight: 700;
+    font-size: 14px; line-height: 1.45; color: var(--text-main);
+    display: -webkit-box; -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical; overflow: hidden;
+    margin-bottom: 10px;
+  }
+  .video-meta {
+    display: flex; align-items: center; gap: 14px;
+    font-size: 12px; color: var(--text-muted); font-weight: 600;
+  }
+
+  /* ── STATE BOXES ─────────────────────────── */
+  .state-box {
+    text-align: center; padding: 72px 24px;
+    grid-column: 1/-1;
+  }
+  .state-box .state-icon { font-size: 64px; margin-bottom: 16px; }
+  .state-box h3 {
+    font-family: 'Baloo 2', cursive; font-size: 24px;
+    color: var(--text-main); margin-bottom: 8px;
+  }
+  .state-box p { color: var(--text-muted); font-size: 15px; max-width: 360px; margin: auto; line-height: 1.5; }
+  .spinner {
+    width: 50px; height: 50px;
+    border: 4px solid var(--black-border);
+    border-top-color: var(--orange);
+    border-radius: 50%; animation: spin 0.75s linear infinite;
+    margin: 0 auto 20px;
+    box-shadow: 0 0 20px rgba(255,107,0,0.2);
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── LOAD MORE ───────────────────────────── */
+  .load-more-wrap { text-align: center; margin-top: 40px; }
+  .load-more-btn {
+    display: none;
+    padding: 14px 50px;
+    background: linear-gradient(135deg, var(--orange-dark), var(--orange));
+    border: none; border-radius: 50px;
+    color: white; font-family: 'Baloo 2', cursive;
+    font-size: 17px; font-weight: 700; cursor: pointer;
+    box-shadow: 0 6px 30px rgba(255,107,0,0.35);
+    transition: opacity 0.2s, transform 0.2s;
+  }
+  .load-more-btn:hover { opacity: 0.88; transform: translateY(-2px); }
+
+  /* ── FOOTER ──────────────────────────────── */
+  footer {
+    background: #0A0A0A;
+    border-top: 1px solid var(--black-border);
+    text-align: center; padding: 28px;
+    font-size: 13px; color: var(--text-muted);
+    margin-top: 64px;
+  }
+  footer strong { color: var(--orange); }
+
+  /* ── TOAST ───────────────────────────────── */
+  .toast {
+    position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%);
+    background: #1a1a1a; color: white;
+    border: 1px solid var(--black-border);
+    padding: 12px 26px; border-radius: 50px;
+    font-size: 14px; font-weight: 600;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+    opacity: 0; transition: opacity 0.3s;
+    pointer-events: none; z-index: 9999; white-space: nowrap;
+  }
+  .toast.show { opacity: 1; }
+  .toast.error   { border-color: #c0392b; color: #ff6b6b; }
+  .toast.success { border-color: var(--orange); color: var(--orange); }
+
+  /* ── SCROLLBAR ───────────────────────────── */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--black); }
+  ::-webkit-scrollbar-thumb { background: var(--black-border); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--orange); }
+
+  @media (max-width: 600px) {
+    .header-inner { gap: 10px; }
+    .logo-text { font-size: 22px; }
+    .live-badge { display: none; }
+    .video-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════
+     ⚙️  CONFIGURATION — ADD YOUR API KEY BELOW
+     Get a free key at:
+     https://console.cloud.google.com → Enable YouTube Data API v3
+═══════════════════════════════════════════ -->
+<script>
+  const API_KEY = "AIzaSyBdZJ07_6cy5n99DioxjTtsj2pSbFJs0rE"; // 👈 Replace this with your key
+</script>
+<!-- ═══════════════════════════════════════════ -->
+
+<!-- ─── HEADER ─────────────────────────────── -->
+<header>
+  <div class="header-inner">
+    <a href="#" class="logo">
+      <div class="logo-icon">🇮🇳</div>
+      <span class="logo-text">Indi<span>Info</span></span>
+    </a>
+    <div class="header-search">
+      <button onclick="triggerSearch()">🔍</button>
+      <input type="text" id="headerSearch"
+             placeholder="Search business ideas, govt rules, schemes…"
+             onkeydown="if(event.key==='Enter') triggerSearch()" />
+    </div>
+    <div class="live-badge">
+      <div class="live-dot"></div> LIVE
+    </div>
+  </div>
+</header>
+
+<!-- ─── HERO ──────────────────────────────── -->
+<div class="hero">
+  <div class="hero-tag">🇮🇳 Made for Indian Entrepreneurs</div>
+  <h1>India's <em>Business Intelligence</em><br>Hub 🚀</h1>
+  <p>Discover trending business ideas, new government rules, startup strategies and more — curated from YouTube for India's next generation of entrepreneurs.</p>
+  <div class="lang-toggle">
+    <button class="lang-btn active" id="btnAll"   onclick="setLang('all')">🌐 All</button>
+    <button class="lang-btn"        id="btnHindi" onclick="setLang('hi')">🇮🇳 हिंदी</button>
+    <button class="lang-btn"        id="btnEng"   onclick="setLang('en')">🇬🇧 English</button>
+  </div>
+</div>
+
+<!-- ─── CATEGORIES ─────────────────────────── -->
+<div class="categories-wrap">
+  <div class="section-label">Browse Categories</div>
+  <div class="categories-scroll" id="catScroll"></div>
+</div>
+
+<!-- ─── RESULTS ────────────────────────────── -->
+<div class="main-wrap">
+  <div class="results-header">
+    <div>
+      <div class="results-title" id="resultsTitle">Trending Business Ideas 🔥</div>
+      <div class="results-count" id="resultsCount"></div>
+    </div>
+    <select class="sort-select" id="sortSelect" onchange="triggerSearch()">
+      <option value="relevance">Most Relevant</option>
+      <option value="date">Latest First</option>
+      <option value="viewCount">Most Viewed</option>
+      <option value="rating">Top Rated</option>
+    </select>
+  </div>
+
+  <div class="video-grid" id="videoGrid">
+    <div class="state-box">
+      <div class="spinner"></div>
+      <h3>Loading Videos…</h3>
+      <p>Fetching the best content from YouTube for you.</p>
+    </div>
+  </div>
+
+  <div class="load-more-wrap">
+    <button class="load-more-btn" id="loadMoreBtn" onclick="loadMore()">
+      Load More Videos ↓
+    </button>
+  </div>
+</div>
+
+<!-- ─── FOOTER ─────────────────────────────── -->
+<footer>
+  <strong>IndiInfo</strong> — Empowering Indian Entrepreneurs &nbsp;|&nbsp;
+  Powered by YouTube Data API &nbsp;|&nbsp; 🇮🇳 India 2025
+</footer>
+
+<!-- ─── TOAST ──────────────────────────────── -->
+<div class="toast" id="toast"></div>
+
+<script>
+/* ═══════════════════════════════════════════
+   CATEGORIES DATA
+═══════════════════════════════════════════ */
+const CATEGORIES = [
+  { id: 'business', icon: '💼', name: 'Business Ideas',          q: 'business ideas India 2024' },
+  { id: 'rules',    icon: '📜', name: 'New Rules & Regulations', q: 'new rules regulations India government 2024' },
+  { id: 'startup',  icon: '🚀', name: 'Startup Tips',            q: 'startup tips India entrepreneur' },
+  { id: 'schemes',  icon: '🏛️', name: 'Govt Schemes',            q: 'government scheme India startup MSME loan' },
+  { id: 'tax',      icon: '🧾', name: 'GST & Tax',               q: 'GST tax rules India 2024' },
+  { id: 'small',    icon: '🏪', name: 'Small Business',          q: 'small business ideas India low investment' },
+  { id: 'digital',  icon: '💻', name: 'Digital Business',        q: 'digital business online earn money India' },
+  { id: 'invest',   icon: '📈', name: 'Investment Ideas',        q: 'investment ideas India passive income 2024' },
+  { id: 'agri',     icon: '🌾', name: 'Agri Business',           q: 'agriculture business farming ideas India' },
+  { id: 'export',   icon: '🚢', name: 'Import / Export',         q: 'import export business India guide' },
+  { id: 'women',    icon: '👩‍💼', name: 'Women Entrepreneurs',     q: 'women entrepreneur business ideas India' },
+  { id: 'mfg',      icon: '🏭', name: 'Manufacturing',           q: 'manufacturing business ideas India profit' },
+];
+
+/* ═══════════════════════════════════════════
+   STATE
+═══════════════════════════════════════════ */
+let activeCategory = 'business';
+let activeLang     = 'all';
+let nextPageToken   = '';
+let currentQuery   = '';
+
+/* ═══════════════════════════════════════════
+   RENDER CATEGORIES
+═══════════════════════════════════════════ */
+function renderCategories() {
+  document.getElementById('catScroll').innerHTML = CATEGORIES.map(c => `
+    <div class="cat-card ${c.id === activeCategory ? 'active' : ''}"
+         onclick="selectCat('${c.id}')">
+      <div class="cat-icon">${c.icon}</div>
+      <div class="cat-name">${c.name}</div>
+    </div>
+  `).join('');
+}
+
+function selectCat(id) {
+  activeCategory = id;
+  currentQuery   = '';
+  document.getElementById('headerSearch').value = '';
+  const cat = CATEGORIES.find(c => c.id === id);
+  document.getElementById('resultsTitle').textContent = cat.icon + ' ' + cat.name;
+  renderCategories();
+  search(cat.q, true);
+}
+
+/* ═══════════════════════════════════════════
+   LANGUAGE TOGGLE
+═══════════════════════════════════════════ */
+function setLang(lang) {
+  activeLang = lang;
+  ['btnAll', 'btnHindi', 'btnEng'].forEach(id =>
+    document.getElementById(id).classList.remove('active'));
+  const map = { all: 'btnAll', hi: 'btnHindi', en: 'btnEng' };
+  document.getElementById(map[lang]).classList.add('active');
+  triggerSearch();
+}
+
+/* ═══════════════════════════════════════════
+   SEARCH TRIGGER
+═══════════════════════════════════════════ */
+function triggerSearch() {
+  const q = document.getElementById('headerSearch').value.trim();
+  if (q) {
+    currentQuery   = q;
+    activeCategory = '';
+    renderCategories();
+    document.getElementById('resultsTitle').textContent = '🔍 Results for "' + q + '"';
+  }
+  const cat   = CATEGORIES.find(c => c.id === activeCategory);
+  const query = currentQuery || (cat ? cat.q : 'business ideas India');
+  search(query, true);
+}
+
+/* ═══════════════════════════════════════════
+   YOUTUBE API SEARCH
+═══════════════════════════════════════════ */
+async function search(query, fresh = true) {
+
+  // Guard: API key not set
+  if (!API_KEY || API_KEY === "ADD_YOUR_YOUTUBE_API_KEY_HERE") {
+    document.getElementById('videoGrid').innerHTML = `
+      <div class="state-box">
+        <div class="state-icon">🔑</div>
+        <h3>API Key Not Set</h3>
+        <p>Open the HTML file in a code editor and replace <strong>ADD_YOUR_YOUTUBE_API_KEY_HERE</strong> with your YouTube Data API v3 key.</p>
+      </div>`;
+    return;
+  }
+
+  if (fresh) {
+    nextPageToken = '';
+    document.getElementById('videoGrid').innerHTML = `
+      <div class="state-box">
+        <div class="spinner"></div>
+        <h3>Loading Videos…</h3>
+        <p>Fetching the best content from YouTube.</p>
+      </div>`;
+    document.getElementById('loadMoreBtn').style.display = 'none';
+  }
+
+  const langParam = activeLang === 'hi' ? '&relevanceLanguage=hi'
+                  : activeLang === 'en' ? '&relevanceLanguage=en'
+                  : '';
+  const order    = document.getElementById('sortSelect').value;
+  const pageParam = nextPageToken ? `&pageToken=${nextPageToken}` : '';
+  const url = `https://www.googleapis.com/youtube/v3/search`
+            + `?part=snippet&type=video`
+            + `&q=${encodeURIComponent(query + ' India')}`
+            + `&maxResults=20&order=${order}`
+            + langParam + pageParam
+            + `&key=${API_KEY}`;
+
+  try {
+    const res  = await fetch(url);
+    const data = await res.json();
+
+    if (data.error) {
+      document.getElementById('videoGrid').innerHTML = `
+        <div class="state-box">
+          <div class="state-icon">⚠️</div>
+          <h3>YouTube API Error</h3>
+          <p>${escHtml(data.error.message)}</p>
+        </div>`;
+      showToast('API Error: ' + data.error.message.slice(0, 60), 'error');
+      return;
+    }
+
+    nextPageToken = data.nextPageToken || '';
+    const items = data.items || [];
+
+    document.getElementById('resultsCount').textContent =
+      items.length ? `Showing ${items.length} videos` : '';
+    document.getElementById('loadMoreBtn').style.display =
+      nextPageToken ? 'inline-block' : 'none';
+
+    if (!items.length) {
+      document.getElementById('videoGrid').innerHTML = `
+        <div class="state-box">
+          <div class="state-icon">🔍</div>
+          <h3>No Videos Found</h3>
+          <p>Try a different category or search term.</p>
+        </div>`;
+      return;
+    }
+
+    const cards = items.map(videoCard).join('');
+    if (fresh) {
+      document.getElementById('videoGrid').innerHTML = cards;
+    } else {
+      document.getElementById('videoGrid').insertAdjacentHTML('beforeend', cards);
+    }
+
+  } catch (err) {
+    document.getElementById('videoGrid').innerHTML = `
+      <div class="state-box">
+        <div class="state-icon">📡</div>
+        <h3>Network Error</h3>
+        <p>Check your internet connection and try again.</p>
+      </div>`;
+    showToast('Network error — check your connection', 'error');
+  }
+}
+
+function loadMore() {
+  const cat   = CATEGORIES.find(c => c.id === activeCategory);
+  const query = currentQuery || (cat ? cat.q : 'business ideas India');
+  search(query, false);
+}
+
+/* ═══════════════════════════════════════════
+   VIDEO CARD HTML
+═══════════════════════════════════════════ */
+function videoCard(item) {
+  const vid     = item.id.videoId;
+  const sn      = item.snippet;
+  const thumb   = sn.thumbnails?.medium?.url || sn.thumbnails?.default?.url || '';
+  const title   = escHtml(sn.title);
+  const channel = escHtml(sn.channelTitle);
+  const pub     = timeAgo(sn.publishedAt);
+  const initial = channel.charAt(0).toUpperCase();
+  const lang    = detectLang(sn.title + ' ' + (sn.description || ''));
+  const badge   = `<span class="lang-badge ${lang}">${lang === 'hi' ? 'हिंदी' : 'ENG'}</span>`;
+
+  return `
+  <div class="video-card" onclick="window.open('https://www.youtube.com/watch?v=${vid}','_blank')">
+    <div class="thumb-wrap">
+      <img src="${thumb}" alt="${title}" loading="lazy" />
+      <div class="play-overlay">
+        <div class="play-btn">
+          <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+        </div>
+      </div>
+      ${badge}
+    </div>
+    <div class="video-info">
+      <div class="channel-row">
+        <div class="channel-avatar">${initial}</div>
+        <span class="channel-name">${channel}</span>
+      </div>
+      <div class="video-title">${title}</div>
+      <div class="video-meta">
+        <span>🕒 ${pub}</span>
+      </div>
+    </div>
+  </div>`;
+}
+
+/* ═══════════════════════════════════════════
+   HELPERS
+═══════════════════════════════════════════ */
+function detectLang(text) {
+  return /[\u0900-\u097F]/.test(text) ? 'hi' : 'en';
+}
+function escHtml(s) {
+  return String(s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function timeAgo(dateStr) {
+  const d = (Date.now() - new Date(dateStr)) / 1000;
+  if (d < 3600)    return Math.floor(d / 60)    + ' min ago';
+  if (d < 86400)   return Math.floor(d / 3600)  + ' hrs ago';
+  if (d < 2592000) return Math.floor(d / 86400) + ' days ago';
+  if (d < 31536000)return Math.floor(d / 2592000)+ ' months ago';
+  return Math.floor(d / 31536000) + ' years ago';
+}
+function showToast(msg, type = '') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + type;
+  setTimeout(() => { t.className = 'toast'; }, 3500);
+}
+
+/* ═══════════════════════════════════════════
+   INIT
+═══════════════════════════════════════════ */
+renderCategories();
+const firstCat = CATEGORIES.find(c => c.id === activeCategory);
+search(firstCat.q, true);
+</script>
+</body>
+</html>

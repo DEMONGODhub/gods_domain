@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TypeFlow — Practice</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600&family=Syne:wght@400;700&display=swap');
+
+  :root {
+    --bg: #0d0d0f;
+    --surface: #141417;
+    --border: #222228;
+    --text: #c8c8d4;
+    --dim: #4a4a5a;
+    --accent: #7c6af7;
+    --accent2: #f06b6b;
+    --green: #5af0a0;
+    --mono: 'JetBrains Mono', monospace;
+    --sans: 'Syne', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--mono);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem 1rem;
+  }
+
+  header {
+    width: 100%;
+    max-width: 760px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2.5rem;
+  }
+
+  .logo {
+    font-family: var(--sans);
+    font-size: 1.3rem;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    color: #fff;
+  }
+
+  .logo span { color: var(--accent); }
+
+  .stats-bar {
+    display: flex;
+    gap: 1.5rem;
+    font-size: 0.75rem;
+    color: var(--dim);
+  }
+
+  .stat { text-align: center; }
+  .stat-val {
+    display: block;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text);
+  }
+  #wpm-val { color: var(--accent); }
+  #acc-val { color: var(--green); }
+
+  .mode-bar {
+    width: 100%;
+    max-width: 760px;
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+  }
+
+  .mode-btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--dim);
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    padding: 0.35rem 0.8rem;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .mode-btn:hover { color: var(--text); border-color: #333340; }
+  .mode-btn.active {
+    background: #1a1830;
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  #test-box {
+    width: 100%;
+    max-width: 760px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 2rem;
+    margin-bottom: 1.5rem;
+    position: relative;
+  }
+
+  #words {
+    font-size: 1.35rem;
+    line-height: 2rem;
+    letter-spacing: 0.02em;
+    user-select: none;
+    word-break: break-word;
+  }
+
+  .w { display: inline; }
+  .char { transition: color 0.05s; }
+  .char.correct { color: #fff; }
+  .char.wrong { color: var(--accent2); background: rgba(240,107,107,0.12); border-radius: 2px; }
+  .char.cursor {
+    border-left: 2px solid var(--accent);
+    margin-left: -1px;
+    animation: blink 1s step-end infinite;
+  }
+  .char.pending { color: var(--dim); }
+
+  @keyframes blink { 50% { border-color: transparent; } }
+
+  #input-field {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+    top: 0; left: 0;
+    width: 1px; height: 1px;
+  }
+
+  .click-hint {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(13,13,15,0.7);
+    border-radius: 8px;
+    font-size: 0.85rem;
+    color: var(--dim);
+    cursor: pointer;
+    backdrop-filter: blur(2px);
+  }
+  .click-hint span { color: var(--accent); }
+
+  #result-panel {
+    display: none;
+    width: 100%;
+    max-width: 760px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 2rem;
+    text-align: center;
+  }
+
+  #result-panel h2 {
+    font-family: var(--sans);
+    font-size: 1rem;
+    color: var(--dim);
+    margin-bottom: 1.5rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .result-grid {
+    display: flex;
+    justify-content: center;
+    gap: 3rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .r-stat-val {
+    font-size: 2.5rem;
+    font-weight: 600;
+    display: block;
+    line-height: 1;
+    margin-bottom: 0.3rem;
+  }
+
+  .r-stat-lbl { font-size: 0.75rem; color: var(--dim); }
+  #r-wpm { color: var(--accent); }
+  #r-acc { color: var(--green); }
+
+  #retry-btn {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    padding: 0.6rem 1.8rem;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  #retry-btn:hover { opacity: 0.85; }
+
+  footer {
+    margin-top: 2rem;
+    font-size: 0.7rem;
+    color: var(--dim);
+  }
+
+  #timer-display {
+    font-size: 0.75rem;
+    color: var(--dim);
+    text-align: right;
+    max-width: 760px;
+    width: 100%;
+    margin-bottom: 0.5rem;
+  }
+
+  #timer-display span { color: var(--accent); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Type<span>Flow</span></div>
+  <div class="stats-bar">
+    <div class="stat"><span class="stat-val" id="wpm-val">—</span>wpm</div>
+    <div class="stat"><span class="stat-val" id="acc-val">—</span>acc</div>
+  </div>
+</header>
+
+<div class="mode-bar">
+  <button class="mode-btn active" data-mode="15">15s</button>
+  <button class="mode-btn" data-mode="30">30s</button>
+  <button class="mode-btn" data-mode="60">60s</button>
+  <button class="mode-btn" data-mode="0">words</button>
+</div>
+
+<div id="timer-display">time: <span id="timer-val">—</span></div>
+
+<div id="test-box" onclick="startTest()">
+  <div id="words"></div>
+  <input id="input-field" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+  <div class="click-hint" id="hint">click or press any key to <span>start</span></div>
+</div>
+
+<div id="result-panel">
+  <h2>Results</h2>
+  <div class="result-grid">
+    <div class="r-stat">
+      <span class="r-stat-val" id="r-wpm">—</span>
+      <span class="r-stat-lbl">WPM</span>
+    </div>
+    <div class="r-stat">
+      <span class="r-stat-val" id="r-acc">—</span>
+      <span class="r-stat-lbl">Accuracy</span>
+    </div>
+    <div class="r-stat">
+      <span class="r-stat-val" id="r-time" style="color:var(--text)">—</span>
+      <span class="r-stat-lbl">Time</span>
+    </div>
+  </div>
+  <button id="retry-btn" onclick="reset()">retry</button>
+</div>
+
+<footer>typeflow — lightweight dark typing practice</footer>
+
+<script>
+const WORDS = "the and that have with this they from will been said each which she there her their time use how made about many then them some like would into him look two more go see no way could people my than first been called who oil its now find long down day did get come made part over new sound take only little work know place years live back give most very after thing our just name good sentence man think say great where help through much before line right too mean old any same tell boy follow came want show also around form three small set put end does another well large must big even such because turn here why asked went men read need land different home us move try kind hand picture change off play spell air away animal house point letter mother answer found study still learn should America world high every near add food between own below country plant last school father keep tree never start city earth eyes light thought head under story saw left don't few while along might close something seem next hard open example begin life always those both paper together got group often run important until children feet land enough almost side project full special took".split(' ');
+
+let chars = [], curIdx = 0, started = false, finished = false;
+let timer = null, timeLeft = 15, mode = 15;
+let totalTyped = 0, correct = 0, startTime = 0;
+
+const wordsEl = document.getElementById('words');
+const inputEl = document.getElementById('input-field');
+const hintEl = document.getElementById('hint');
+const timerVal = document.getElementById('timer-val');
+const wpmVal = document.getElementById('wpm-val');
+const accVal = document.getElementById('acc-val');
+const resultPanel = document.getElementById('result-panel');
+const testBox = document.getElementById('test-box');
+
+function getRandWords(n) {
+  let out = [];
+  for (let i = 0; i < n; i++) out.push(WORDS[Math.floor(Math.random() * WORDS.length)]);
+  return out;
+}
+
+function buildText() {
+  chars = [];
+  wordsEl.innerHTML = '';
+  const wordCount = mode === 0 ? 30 : 80;
+  const words = getRandWords(wordCount);
+  let fullText = words.join(' ');
+  [...fullText].forEach((c, i) => {
+    const span = document.createElement('span');
+    span.className = 'char pending' + (i === 0 ? ' cursor' : '');
+    span.textContent = c;
+    wordsEl.appendChild(span);
+    chars.push({ el: span, char: c, state: 'pending' });
+  });
+}
+
+function startTest() {
+  if (started) return;
+  hintEl.style.display = 'none';
+  inputEl.style.pointerEvents = 'auto';
+  inputEl.focus();
+}
+
+function beginTyping() {
+  if (started || finished) return;
+  started = true;
+  startTime = Date.now();
+  if (mode > 0) {
+    timeLeft = mode;
+    timerVal.textContent = timeLeft;
+    timer = setInterval(() => {
+      timeLeft--;
+      timerVal.textContent = timeLeft;
+      if (timeLeft <= 0) endTest();
+    }, 1000);
+  }
+}
+
+function endTest() {
+  clearInterval(timer);
+  finished = true;
+  inputEl.blur();
+  const elapsed = (Date.now() - startTime) / 60000;
+  const wpm = Math.round((correct / 5) / elapsed);
+  const acc = totalTyped ? Math.round((correct / totalTyped) * 100) : 0;
+  document.getElementById('r-wpm').textContent = wpm;
+  document.getElementById('r-acc').textContent = acc + '%';
+  document.getElementById('r-time').textContent = mode > 0 ? mode + 's' : Math.round(elapsed * 60) + 's';
+  testBox.style.display = 'none';
+  resultPanel.style.display = 'block';
+}
+
+function updateLiveStats() {
+  if (!started) return;
+  const elapsed = (Date.now() - startTime) / 60000;
+  const wpm = Math.round((correct / 5) / elapsed) || 0;
+  const acc = totalTyped ? Math.round((correct / totalTyped) * 100) : 100;
+  wpmVal.textContent = wpm;
+  accVal.textContent = acc + '%';
+}
+
+inputEl.addEventListener('keydown', (e) => {
+  if (finished) return;
+  if (!started) beginTyping();
+
+  if (e.key === 'Backspace') {
+    e.preventDefault();
+    if (curIdx === 0) return;
+    curIdx--;
+    chars[curIdx].el.classList.remove('cursor');
+    if (curIdx + 1 < chars.length) chars[curIdx + 1].el.classList.remove('cursor');
+    const prev = chars[curIdx];
+    if (prev.state !== 'pending') {
+      if (prev.state === 'correct') correct--;
+      totalTyped--;
+    }
+    prev.state = 'pending';
+    prev.el.className = 'char pending';
+    chars[curIdx].el.classList.add('cursor');
+    return;
+  }
+
+  if (e.key.length !== 1) return;
+  e.preventDefault();
+
+  if (curIdx >= chars.length) return;
+
+  const expected = chars[curIdx].char;
+  const typed = e.key;
+  totalTyped++;
+
+  chars[curIdx].el.classList.remove('cursor');
+
+  if (typed === expected) {
+    chars[curIdx].state = 'correct';
+    chars[curIdx].el.className = 'char correct';
+    correct++;
+  } else {
+    chars[curIdx].state = 'wrong';
+    chars[curIdx].el.className = 'char wrong';
+  }
+
+  curIdx++;
+  if (curIdx < chars.length) {
+    chars[curIdx].el.classList.add('cursor');
+    // Auto scroll if needed
+    chars[curIdx].el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }
+
+  if (mode === 0 && curIdx >= chars.length) endTest();
+  updateLiveStats();
+});
+
+document.querySelectorAll('.mode-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    mode = parseInt(btn.dataset.mode);
+    reset();
+  });
+});
+
+document.addEventListener('keydown', (e) => {
+  if (!started && !finished && e.key.length === 1) {
+    startTest();
+  }
+  if (e.key === 'Escape') reset();
+  if (e.key === 'Tab') { e.preventDefault(); reset(); }
+});
+
+function reset() {
+  clearInterval(timer);
+  started = false; finished = false;
+  curIdx = 0; totalTyped = 0; correct = 0;
+  wpmVal.textContent = '—'; accVal.textContent = '—';
+  timerVal.textContent = '—';
+  inputEl.value = '';
+  inputEl.style.pointerEvents = 'none';
+  testBox.style.display = 'block';
+  resultPanel.style.display = 'none';
+  hintEl.style.display = 'flex';
+  buildText();
+}
+
+reset();
+</script>
+</body>
+</html>
