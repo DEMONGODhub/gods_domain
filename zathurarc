@@ -1,10 +1,33 @@
+# Dracula color palette
+set default-bg "#282a36"
+set default-fg "#f8f8f2"
+set statusbar-bg "#44475a"
+set statusbar-fg "#f8f8f2"
+set inputbar-bg "#282a36"
+set inputbar-fg "#f8f8f2"
+set notification-bg "#282a36"
+set notification-fg "#f8f8f2"
+set notification-error-bg "#ff5555"
+set notification-error-fg "#f8f8f2"
+set notification-warning-bg "#ffb86c"
+set notification-warning-fg "#282a36"
+set completion-bg "#282a36"
+set completion-fg "#f8f8f2"
+set completion-highlight-bg "#44475a"
+set completion-highlight-fg "#f8f8f2"
+set index-bg "#282a36"
+set index-fg "#f8f8f2"
+set index-active-bg "#bd93f9"
+set index-active-fg "#282a36"
+set highlight-color "#bd93f9"
+set highlight-active-color "#ff79c6"
 
 # --------dark/light --------
 map <C-i> recolor
 # Enable inversion (dark mode) by default
 set recolor true
-set recolor-lightcolor "#282828"
-set recolor-darkcolor  "#FFFFFF"
+set recolor-lightcolor "#f8f8f2"
+set recolor-darkcolor  "#282a36"
 set recolor-keephue true
 #enable thise 1st
 set smooth-scroll true
