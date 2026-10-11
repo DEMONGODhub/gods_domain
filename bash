@@ -32,6 +32,7 @@ export PATH="$HOME/bin:$HOME/.local/bin:$PATH"
 if command -v dircolors >/dev/null 2>&1; then
     eval "$(dircolors -b)"
 fi
+export LS_COLORS="${LS_COLORS:+${LS_COLORS}:}di=38;5;141:ln=38;5;117:ex=38;5;84"
 
 # ---- Aliases (safe + useful) ----
 alias ls='ls --color=auto'
